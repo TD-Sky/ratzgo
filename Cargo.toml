@@ -1,0 +1,32 @@
+[package]
+name = "ratzgo"
+version = "0.1.0"
+edition = "2024"
+description = "Composable, async-first, elm-like ratatui framework"
+documentation = "https://docs.rs/ratzgo"
+repository = "https://github.com/TD-Sky/ratzgo"
+readme = "README.md"
+categories = ["command-line-interface"]
+keywords = ["tui", "ratatui", "terminal", "async", "framework"]
+license = "MIT"
+include = [
+  "src/**/*",
+  "Cargo.toml",
+  "Cargo.lock",
+  "LICENSE*",
+  "README.md",
+]
+
+[package.metadata.cargo-shear]
+ignored = ["crossterm"]
+
+[dependencies]
+ratatui-core = "0.1"
+ratatui-crossterm = "0.1"
+compio-runtime = { version = "0.12", features = ["time"] }
+thin-cell = "0.2.0"
+futures-util = "0.3"
+crossterm = { version = "0.29", features = ["event-stream"] }
+ratatui-widgets = "0.3"
+pin-project-lite = "0.2"
+flume = "0.12"

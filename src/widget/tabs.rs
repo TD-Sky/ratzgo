@@ -1,0 +1,92 @@
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::Widget as _};
+use ratatui_crossterm::crossterm::event::KeyEvent;
+
+use crate::core::*;
+
+#[derive(Debug)]
+pub struct Tabs<'a, Message> {
+    base: ratatui_widgets::tabs::Tabs<'a>,
+    area: Rect,
+    activity: bool,
+    on_key: OnKey<'a, Message>,
+}
+
+impl<'a, Message> Tabs<'a, Message> {
+    pub fn new(titles: impl IntoIterator<Item = Line<'a>>) -> Self {
+        Self {
+            base: ratatui_widgets::tabs::Tabs::new(titles),
+            area: Default::default(),
+            activity: false,
+            on_key: OnKey::default(),
+        }
+    }
+
+    pub fn select(mut self, index: impl Into<Option<usize>>) -> Self {
+        self.base = self.base.select(index);
+        self
+    }
+
+    pub fn decorate<F>(mut self, f: F) -> Self
+    where
+        F: FnOnce(ratatui_widgets::tabs::Tabs<'a>) -> ratatui_widgets::tabs::Tabs<'a>,
+    {
+        self.base = f(self.base);
+        self
+    }
+}
+
+impl<'a, Message> Widget<Message> for Tabs<'a, Message>
+where
+    Message: std::fmt::Debug,
+{
+    fn activity(&self) -> bool {
+        false
+    }
+
+    fn area(&self) -> Rect {
+        self.area
+    }
+
+    fn set_area(&mut self, area: Rect) {
+        self.area = area;
+    }
+
+    fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
+        self.on_key.key(key)
+    }
+
+    fn adapt(&mut self, buf: &mut Buffer) {
+        (&self.base).render(self.area, buf);
+    }
+}
+
+impl<'a, Message> Activable for Tabs<'a, Message> {
+    fn active_mut(&mut self) -> &mut bool {
+        &mut self.activity
+    }
+}
+
+impl<'a, Message> OnKeyBuilder<'a, Message> for Tabs<'a, Message> {
+    fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
+        &mut self.on_key
+    }
+}
+
+impl<'a, Message> From<Tabs<'a, Message>> for Element<'a, Message>
+where
+    Message: std::fmt::Debug + 'a,
+{
+    fn from(widget: Tabs<'a, Message>) -> Self {
+        Self::new(widget)
+    }
+}
+
+#[macro_export]
+macro_rules! tabs {
+    ($($title:expr),+ $(,)?) => {
+        $crate::widget::Tabs::new(
+            [$($crate::text::Line::from($title)),+],
+        )
+    };
+}
+pub use tabs;

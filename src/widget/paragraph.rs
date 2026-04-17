@@ -1,0 +1,109 @@
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget as _};
+use ratatui_crossterm::crossterm::event::KeyEvent;
+
+use crate::{
+    core::*,
+    scroll::{ScrollAction, scroll_vertical},
+};
+
+pub fn paragraph<'a, Message>(
+    text: impl Into<Text<'a>>,
+    state: &'a mut ParagraphState,
+) -> Paragraph<'a, Message> {
+    let text = text.into();
+
+    Paragraph {
+        base: ratatui_widgets::paragraph::Paragraph::new(text),
+        activity: false,
+        on_key: Default::default(),
+        state,
+    }
+}
+
+#[derive(Debug)]
+pub struct Paragraph<'a, Message> {
+    base: ratatui_widgets::paragraph::Paragraph<'a>,
+    activity: bool,
+    on_key: OnKey<'a, Message>,
+    state: &'a mut ParagraphState,
+}
+
+impl<'a, Message> Paragraph<'a, Message> {
+    pub fn decorate<F>(mut self, f: F) -> Self
+    where
+        F: FnOnce(
+            ratatui_widgets::paragraph::Paragraph<'a>,
+        ) -> ratatui_widgets::paragraph::Paragraph<'a>,
+    {
+        self.base = f(self.base);
+        self
+    }
+}
+
+impl<'a, Message> Widget<Message> for Paragraph<'a, Message>
+where
+    Message: std::fmt::Debug,
+{
+    fn activity(&self) -> bool {
+        self.activity
+    }
+
+    fn area(&self) -> Rect {
+        self.state.area
+    }
+
+    fn set_area(&mut self, area: Rect) {
+        self.state.area = area;
+    }
+
+    fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
+        self.on_key.key(key)
+    }
+
+    fn adapt(&mut self, buf: &mut Buffer) {
+        let base = if self.state.scroll != (0, 0) {
+            &std::mem::take(&mut self.base).scroll(self.state.scroll)
+        } else {
+            &self.base
+        };
+
+        base.render(self.state.area, buf);
+    }
+}
+
+impl<'a, Message> Activable for Paragraph<'a, Message> {
+    fn active_mut(&mut self) -> &mut bool {
+        &mut self.activity
+    }
+}
+
+impl<'a, Message> OnKeyBuilder<'a, Message> for Paragraph<'a, Message> {
+    fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
+        &mut self.on_key
+    }
+}
+
+impl<'a, Message> From<Paragraph<'a, Message>> for Element<'a, Message>
+where
+    Message: std::fmt::Debug + 'a,
+{
+    fn from(widget: Paragraph<'a, Message>) -> Self {
+        Self::new(widget)
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ParagraphState {
+    pub scroll: (u16, u16),
+    pub area: Rect,
+}
+
+impl ParagraphState {
+    pub fn reset(&mut self) {
+        self.scroll = (0, 0);
+    }
+
+    pub fn scroll_vertical(&mut self, action: ScrollAction, total_lines: usize) {
+        self.scroll.0 = scroll_vertical(action, self.scroll.0, total_lines, self.area.height);
+    }
+}
