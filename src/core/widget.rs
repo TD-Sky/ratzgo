@@ -21,6 +21,11 @@ pub trait Widget<Message>: std::fmt::Debug {
         None
     }
 
+    #[expect(unused)]
+    fn handle_paste(&mut self, content: &str) -> Option<Message> {
+        None
+    }
+
     fn adapt(&mut self, buf: &mut Buffer);
 
     fn render(&mut self, area: Rect, buf: &mut Buffer) {

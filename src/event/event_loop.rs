@@ -179,6 +179,7 @@ fn handle_terminal_event<Message>(event: Event, root: &mut dyn Widget<Message>) 
             }
             _ => None,
         },
+        Event::Paste(content) => root.handle_paste(&content),
         _ => None,
     }
 }
