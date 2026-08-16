@@ -102,6 +102,15 @@ where
             .handle_click(pos)
     }
 
+    fn handle_paste(&mut self, content: &str) -> Option<Message> {
+        self.inner
+            .borrow()
+            .as_mut()?
+            .elt
+            .as_widget_mut()
+            .handle_paste(content)
+    }
+
     fn adapt(&mut self, buf: &mut Buffer) {
         if let Some(inner) = &mut *self.inner.borrow() {
             let area = (inner

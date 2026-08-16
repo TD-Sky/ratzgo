@@ -108,6 +108,16 @@ where
         widget.handle_click(pos)
     }
 
+    fn handle_paste(&mut self, content: &str) -> Option<Message> {
+        self.elts
+            .iter_mut()
+            .find_map(|v| {
+                let v = v.as_widget_mut();
+                v.activity().then_some(v)
+            })
+            .and_then(|v| v.handle_paste(content))
+    }
+
     fn adapt(&mut self, buf: &mut Buffer) {
         for (elt, &area) in self.elts.iter_mut().zip(&*self.base.split(self.area)) {
             elt.as_widget_mut().render(area, buf);

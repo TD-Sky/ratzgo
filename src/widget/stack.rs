@@ -59,6 +59,17 @@ where
             .or_else(|| self.on_key.key(key))
     }
 
+    fn handle_paste(&mut self, content: &str) -> Option<Message> {
+        self.elts
+            .iter_mut()
+            .rev()
+            .find_map(|v| {
+                let v = v.as_widget_mut();
+                v.activity().then_some(v)
+            })
+            .and_then(|v| v.handle_paste(content))
+    }
+
     fn adapt(&mut self, buf: &mut Buffer) {
         for elt in &mut self.elts {
             elt.as_widget_mut().render(self.area, buf);

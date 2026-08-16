@@ -83,6 +83,10 @@ where
         self.inner.as_widget_mut().handle_click(pos)
     }
 
+    fn handle_paste(&mut self, content: &str) -> Option<Message> {
+        self.inner.as_widget_mut().handle_paste(content)
+    }
+
     fn adapt(&mut self, buf: &mut Buffer) {
         let inner_area = self.base.inner(self.area);
         self.inner.as_widget_mut().render(inner_area, buf);
