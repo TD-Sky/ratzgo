@@ -39,7 +39,7 @@ ratzgo is a **composable**, **async-first**, **Elm‑like** ratatui framework. R
 - **Debouncing**: Drop stale `Future`s effortlessly with `UnsyncDebounce`.
 - **Logging**: Publish logs to `LogStream` from anywhere.
 - **Z‑axis stacking**: Use `Stack` container and `MountPoint` for floating layers, opening modals, popups, and toast anywhere in view logic.
-- **Scroll & fit**: Scroll by fixed row count or screen percentage, with optional margins.
+- **Scroll & fit**: Scroll by fixed row/column count or screen percentage, with optional margins.
 
 
 
