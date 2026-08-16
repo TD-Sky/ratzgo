@@ -109,7 +109,8 @@ impl ListState {
         self.base.select(Some(0));
     }
 
-    pub fn scroll_vertical(&mut self, action: ScrollAction, total_lines: usize) {
+    /// Assume each [`ListItem`] height is 1, scroll vertically through the lines.
+    pub fn scroll_lines(&mut self, action: ScrollAction, height: usize) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,
             ScrollAction::Viewport(n) => (self.area.height as f32 * n as f32 * 0.01) as i16,
@@ -119,11 +120,11 @@ impl ListState {
             Some(index) => {
                 *index = index
                     .saturating_add_signed(selected_offset as isize)
-                    .min(total_lines.saturating_sub(1));
+                    .min(height.saturating_sub(1));
             }
             None => {
                 self.select(Some(
-                    (selected_offset as usize).min(total_lines.saturating_sub(1)),
+                    (selected_offset as usize).min(height.saturating_sub(1)),
                 ));
             }
         }

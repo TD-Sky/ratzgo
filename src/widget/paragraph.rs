@@ -1,9 +1,10 @@
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget as _};
 use ratatui_crossterm::crossterm::event::KeyEvent;
+pub use ratatui_widgets::paragraph::Wrap;
 
 use crate::{
     core::*,
-    scroll::{ScrollAction, scroll_vertical},
+    scroll::{ScrollAction, scroll_horizontal, scroll_vertical},
 };
 
 pub fn paragraph<'a, Message>(
@@ -29,6 +30,11 @@ pub struct Paragraph<'a, Message> {
 }
 
 impl<'a, Message> Paragraph<'a, Message> {
+    pub fn wrap(mut self, wrap: Wrap) -> Self {
+        self.base = self.base.wrap(wrap);
+        self
+    }
+
     pub fn decorate<F>(mut self, f: F) -> Self
     where
         F: FnOnce(
@@ -103,7 +109,11 @@ impl ParagraphState {
         self.scroll = (0, 0);
     }
 
-    pub fn scroll_vertical(&mut self, action: ScrollAction, total_lines: usize) {
-        self.scroll.0 = scroll_vertical(action, self.scroll.0, total_lines, self.area.height);
+    pub fn scroll_vertical(&mut self, action: ScrollAction, height: usize) {
+        self.scroll.0 = scroll_vertical(action, self.scroll.0, height, self.area.height);
+    }
+
+    pub fn scroll_horizontal(&mut self, action: ScrollAction, width: usize) {
+        self.scroll.1 = scroll_horizontal(action, self.scroll.1, width, self.area.width);
     }
 }
