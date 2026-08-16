@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://crates.io/crates/ratzgo"><img src="https://img.shields.io/crates/v/ratzgo.svg" alt="crates.io"></a>
   <a href="https://docs.rs/ratzgo/"><img src="https://docs.rs/ratzgo/badge.svg" alt="docs.rs"></a>
+  <a href="https://deepwiki.com/TD-Sky/ratzgo"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 
