@@ -23,6 +23,7 @@ impl<'a, Message> OnKey<'a, Message> {
         }
     }
 
+    #[track_caller]
     pub fn on_key<F>(&mut self, cond: F, msg: Message) -> &mut Self
     where
         F: FnOnce(&KeyEvent) -> bool + 'a,
@@ -36,18 +37,19 @@ impl<'a, Message> OnKey<'a, Message> {
                 v.on_key(cond, msg);
                 *self = Self::FilterMap(v);
             }
-            _ => panic!(),
+            _ => panic!("`on_key` and `on_key_with` are mutually exclusive; choose only one"),
         }
 
         self
     }
 
+    #[track_caller]
     pub fn on_key_with<F>(&mut self, f: F) -> &mut Self
     where
         F: FnOnce(&KeyEvent) -> Option<Message> + 'a,
     {
         if let Self::FilterMap(_) = self {
-            panic!("");
+            panic!("`on_key` and `on_key_with` are mutually exclusive; choose only one");
         }
 
         *self = Self::Map(Map::new(f));
@@ -58,6 +60,7 @@ impl<'a, Message> OnKey<'a, Message> {
 pub trait OnKeyBuilder<'a, Message> {
     fn on_key_mut(&mut self) -> &mut OnKey<'a, Message>;
 
+    #[track_caller]
     fn on_key<F>(mut self, cond: F, msg: Message) -> Self
     where
         F: FnOnce(&KeyEvent) -> bool + 'a,
@@ -67,6 +70,7 @@ pub trait OnKeyBuilder<'a, Message> {
         self
     }
 
+    #[track_caller]
     fn on_key_with<F>(mut self, f: F) -> Self
     where
         F: FnOnce(&KeyEvent) -> Option<Message> + 'a,
