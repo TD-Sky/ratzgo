@@ -25,8 +25,9 @@ pub mod widget {
     mod mount;
     mod paragraph;
     mod stack;
-    pub mod table;
+    mod table;
     mod tabs;
+    mod text;
 
     pub use block::*;
     pub use layout::*;
@@ -36,6 +37,7 @@ pub mod widget {
     pub use stack::*;
     pub use table::*;
     pub use tabs::*;
+    pub use text::*;
 }
 pub mod event {
     pub mod debounce;

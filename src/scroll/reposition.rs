@@ -132,3 +132,43 @@ pub fn repos_x(scroll_x: u16, width: usize, viewport_width: u16) -> u16 {
     let max_scroll = width.saturating_sub(viewport_width);
     scroll_x.min(max_scroll as u16)
 }
+
+pub fn repos_x_anchored(
+    scroll_x: u16,
+    width: usize,
+    viewport_width: u16,
+    threshold_columns: u16,
+    anchor_column: usize,
+) -> u16 {
+    let viewport_columns = viewport_width as usize;
+    if viewport_columns == 0 {
+        return 0;
+    }
+    let threshold_columns = usize::from(threshold_columns).min(viewport_columns.saturating_sub(1));
+
+    if width <= viewport_columns {
+        return 0;
+    }
+
+    let mut scroll_x = scroll_x as usize;
+    if anchor_column < scroll_x.saturating_add(threshold_columns) {
+        scroll_x = anchor_column.saturating_sub(threshold_columns);
+    }
+    if anchor_column
+        > scroll_x
+            + viewport_columns
+                .saturating_sub(1)
+                .saturating_sub(threshold_columns)
+    {
+        scroll_x = anchor_column.saturating_sub(
+            viewport_columns
+                .saturating_sub(1)
+                .saturating_sub(threshold_columns),
+        );
+    }
+
+    let max_scroll = width - viewport_columns;
+    scroll_x = scroll_x.min(max_scroll);
+
+    scroll_x as u16
+}
