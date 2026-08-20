@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-08-20
+
+### Features
+
+- *(no category)* Text widgets (#3)
+
+- *(no category)* Reposition horizontal
+
+
+### Miscellaneous Tasks
+
+- *(no category)* Hint the exclusive in `OnKey`
+
+
 ## [0.1.1] - 2026-08-16
 
 ### Documentation
