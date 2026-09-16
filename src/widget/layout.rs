@@ -1,3 +1,5 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui_core::{
     buffer::Buffer,
     layout::{Constraint, Direction, Position, Rect},
@@ -9,7 +11,7 @@ use crate::core::*;
 #[derive(Debug)]
 pub struct Layout<'a, Message> {
     base: ratatui_core::layout::Layout,
-    area: Rect,
+    area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
     elts: Vec<Element<'a, Message>>,
@@ -62,7 +64,7 @@ impl<'a, Message> Layout<'a, Message> {
         debug_assert_eq!(constraints.len(), elts.len());
 
         Self {
-            area: Rect::default(),
+            area: Default::default(),
             activity: false,
             on_key: OnKey::default(),
             base: ratatui_core::layout::Layout::new(direction, constraints),
@@ -80,11 +82,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -119,9 +121,16 @@ where
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        for (elt, &area) in self.elts.iter_mut().zip(&*self.base.split(self.area)) {
+        for (elt, &area) in self.elts.iter_mut().zip(&*self.base.split(self.area.get())) {
             elt.as_widget_mut().render(area, buf);
         }
+    }
+}
+
+impl<'a, Message> BindArea for Layout<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 

@@ -1,3 +1,5 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::Widget as _};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
@@ -6,7 +8,7 @@ use crate::core::*;
 #[derive(Debug)]
 pub struct Tabs<'a, Message> {
     base: ratatui_widgets::tabs::Tabs<'a>,
-    area: Rect,
+    area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
 }
@@ -44,11 +46,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -56,7 +58,14 @@ where
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        (&self.base).render(self.area, buf);
+        (&self.base).render(self.area.get(), buf);
+    }
+}
+
+impl<'a, Message> BindArea for Tabs<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 

@@ -7,11 +7,13 @@ pub mod core {
         pub use on_key::*;
     }
     mod active;
+    mod area;
     mod element;
     mod widget;
 
     pub use action::{OnKey, OnKeyBuilder};
     pub use active::*;
+    pub use area::*;
     pub use element::*;
     pub use widget::*;
 }

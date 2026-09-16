@@ -1,3 +1,5 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget as _};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::paragraph::Wrap;
@@ -55,11 +57,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.state.area
+        self.state.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.state.area = area;
+        self.state.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -73,7 +75,14 @@ where
             &self.base
         };
 
-        base.render(self.state.area, buf);
+        base.render(self.state.area.get(), buf);
+    }
+}
+
+impl<'a, Message> BindArea for Paragraph<'a, Message> {
+    fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
+        self.state.area = Area::Ref(area.clone());
+        self
     }
 }
 
@@ -101,7 +110,7 @@ where
 #[derive(Debug, Clone, Default)]
 pub struct ParagraphState {
     pub scroll: (u16, u16),
-    pub area: Rect,
+    pub area: Area,
 }
 
 impl ParagraphState {
@@ -110,10 +119,10 @@ impl ParagraphState {
     }
 
     pub fn scroll_vertical(&mut self, action: ScrollAction, height: usize) {
-        self.scroll.0 = scroll_vertical(action, self.scroll.0, height, self.area.height);
+        self.scroll.0 = scroll_vertical(action, self.scroll.0, height, self.area.get().height);
     }
 
     pub fn scroll_horizontal(&mut self, action: ScrollAction, width: usize) {
-        self.scroll.1 = scroll_horizontal(action, self.scroll.1, width, self.area.width);
+        self.scroll.1 = scroll_horizontal(action, self.scroll.1, width, self.area.get().width);
     }
 }

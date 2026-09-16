@@ -1,4 +1,4 @@
-use std::{any, mem};
+use std::{any, cell::Cell, mem, rc::Rc};
 
 use ratatui_core::{
     buffer::Buffer,
@@ -59,7 +59,7 @@ impl<Message> MountPoint<Message> {
 #[derive(Debug, Clone, Default)]
 pub struct MountView<'a, Message> {
     inner: ThinCell<Option<Inner<'a, Message>>>,
-    area: Rect,
+    area: Area,
 }
 
 impl<'a, Message> Drop for MountView<'a, Message> {
@@ -77,11 +77,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -116,11 +116,18 @@ where
             let area = (inner
                 .constraint
                 .take()
-                .expect("`constraint` must be `Some`"))(self.area);
+                .expect("`constraint` must be `Some`"))(self.area.get());
 
             Clear.render(area, buf);
             inner.elt.as_widget_mut().render(area, buf);
         }
+    }
+}
+
+impl<'a, Message> BindArea for MountView<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 
