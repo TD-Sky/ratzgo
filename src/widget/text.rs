@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{cell::Cell, marker::PhantomData, rc::Rc};
 
 use ratatui_core::{
     buffer::Buffer,
@@ -36,7 +36,7 @@ pub fn text<'a, Message>(text: impl Into<Text<'a>>) -> TextWidget<'a, Message> {
 #[derive(Debug)]
 pub struct SpanWidget<'a, Message> {
     base: Span<'a>,
-    area: Rect,
+    area: Area,
     _marker: PhantomData<Message>,
 }
 
@@ -49,15 +49,22 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        (&self.base).render(self.area, buf);
+        (&self.base).render(self.area.get(), buf);
+    }
+}
+
+impl<'a, Message> BindArea for SpanWidget<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 
@@ -73,7 +80,7 @@ where
 #[derive(Debug)]
 pub struct LineWidget<'a, Message> {
     base: Line<'a>,
-    area: Rect,
+    area: Area,
     _marker: PhantomData<Message>,
 }
 
@@ -86,15 +93,22 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        (&self.base).render(self.area, buf);
+        (&self.base).render(self.area.get(), buf);
+    }
+}
+
+impl<'a, Message> BindArea for LineWidget<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 
@@ -110,7 +124,7 @@ where
 #[derive(Debug)]
 pub struct TextWidget<'a, Message> {
     base: Text<'a>,
-    area: Rect,
+    area: Area,
     _marker: PhantomData<Message>,
 }
 
@@ -123,15 +137,22 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        (&self.base).render(self.area, buf);
+        (&self.base).render(self.area.get(), buf);
+    }
+}
+
+impl<'a, Message> BindArea for TextWidget<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 

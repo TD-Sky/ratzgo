@@ -7,11 +7,13 @@ pub mod core {
         pub use on_key::*;
     }
     mod active;
+    mod area;
     mod element;
     mod widget;
 
     pub use action::{OnKey, OnKeyBuilder};
     pub use active::*;
+    pub use area::*;
     pub use element::*;
     pub use widget::*;
 }
@@ -24,6 +26,7 @@ pub mod widget {
     mod list;
     mod mount;
     mod paragraph;
+    mod scrollbar;
     mod stack;
     mod table;
     mod tabs;
@@ -34,6 +37,7 @@ pub mod widget {
     pub use list::*;
     pub use mount::*;
     pub use paragraph::*;
+    pub use scrollbar::*;
     pub use stack::*;
     pub use table::*;
     pub use tabs::*;

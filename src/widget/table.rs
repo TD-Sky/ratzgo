@@ -1,4 +1,8 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    cell::Cell,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 
 use ratatui_core::{
     buffer::Buffer,
@@ -66,11 +70,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.state.area
+        self.state.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.state.area = area;
+        self.state.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -78,7 +82,14 @@ where
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        (&self.base).render(self.state.area, buf, self.state);
+        (&self.base).render(self.state.area.get(), buf, self.state);
+    }
+}
+
+impl<'a, Message> BindArea for Table<'a, Message> {
+    fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
+        self.state.area = Area::Ref(area.clone());
+        self
     }
 }
 
@@ -106,7 +117,7 @@ where
 #[derive(Debug, Default)]
 pub struct TableState {
     base: ratatui_widgets::table::TableState,
-    pub area: Rect,
+    pub area: Area,
 }
 
 impl Deref for TableState {
@@ -132,7 +143,7 @@ impl TableState {
     pub fn scroll_lines(&mut self, action: ScrollAction, height: usize) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,
-            ScrollAction::Viewport(n) => (self.area.height as f32 * n as f32 * 0.01) as i16,
+            ScrollAction::Viewport(n) => (self.area.get().height as f32 * n as f32 * 0.01) as i16,
         };
 
         match self.selected_mut() {

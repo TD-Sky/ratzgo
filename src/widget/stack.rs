@@ -1,3 +1,5 @@
+use std::{cell::Cell, rc::Rc};
+
 use ratatui_core::{buffer::Buffer, layout::Rect};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
@@ -5,7 +7,7 @@ use crate::core::*;
 
 #[derive(Debug)]
 pub struct Stack<'a, Message> {
-    area: Rect,
+    area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
     elts: Vec<Element<'a, Message>>,
@@ -40,11 +42,11 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area
+        self.area.get()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.area = area;
+        self.area.set(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
@@ -71,9 +73,18 @@ where
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
+        let area = self.area.get();
+
         for elt in &mut self.elts {
-            elt.as_widget_mut().render(self.area, buf);
+            elt.as_widget_mut().render(area, buf);
         }
+    }
+}
+
+impl<'a, Message> BindArea for Stack<'a, Message> {
+    fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
+        self.area = Area::Ref(area.clone());
+        self
     }
 }
 
