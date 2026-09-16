@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-09-16
+
+### Features
+
+- *(no category)* Area (#4)
+
+- *(no category)* Render widget on block
+
+- *(no category)* Scrollbar
+
+
 ## [0.1.2] - 2026-08-20
 
 ### Features
