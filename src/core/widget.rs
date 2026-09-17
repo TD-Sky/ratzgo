@@ -4,7 +4,7 @@ use ratatui_core::{
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
-use crate::widget::MapMessage;
+use crate::widget::{FilterKey, MapMessage};
 
 pub trait Widget<Message>: std::fmt::Debug {
     fn activity(&self) -> bool;
@@ -50,6 +50,13 @@ pub trait WidgetExt<Message>: Widget<Message> {
         Self: Sized + 'a,
     {
         MapMessage::new(self, f)
+    }
+
+    fn filter_key<'a>(self, filter: impl Fn(&KeyEvent) -> bool + 'a) -> FilterKey<'a, Message, Self>
+    where
+        Self: Sized + 'a,
+    {
+        FilterKey::new(self, filter)
     }
 }
 

@@ -20,6 +20,7 @@ pub mod text {
 }
 pub mod widget {
     mod block;
+    mod filter_key;
     mod layout;
     mod list;
     mod map_message;
@@ -32,6 +33,7 @@ pub mod widget {
     mod text;
 
     pub use block::*;
+    pub use filter_key::*;
     pub use layout::*;
     pub use list::*;
     pub use map_message::*;
