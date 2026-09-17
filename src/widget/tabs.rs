@@ -81,15 +81,6 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Tabs<'a, Message> {
     }
 }
 
-impl<'a, Message> From<Tabs<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Tabs<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[macro_export]
 macro_rules! tabs {
     ($($title:expr),+ $(,)?) => {

@@ -105,15 +105,6 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Table<'a, Message> {
     }
 }
 
-impl<'a, Message> From<Table<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Table<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct TableState {
     base: ratatui_widgets::table::TableState,

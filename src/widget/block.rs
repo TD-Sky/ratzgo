@@ -11,20 +11,15 @@ pub use ratatui_widgets::borders::{BorderType, Borders};
 
 use crate::core::*;
 
-pub fn block<'a, Message>(widget: impl Into<Element<'a, Message>>) -> Block<'a, Message> {
-    Block {
-        base: ratatui_widgets::block::Block::new(),
-        area: Default::default(),
-        inner: widget.into(),
-        widgets: vec![],
-    }
+pub fn block<'a, Message>(widget: impl Widget<Message> + 'a) -> Block<'a, Message> {
+    Block::new(widget.boxed())
 }
 
 #[derive(Debug)]
-pub struct Block<'a, Message> {
+pub struct Block<'a, Message, W = Box<dyn Widget<Message> + 'a>> {
     base: ratatui_widgets::block::Block<'a>,
     area: Area,
-    inner: Element<'a, Message>,
+    inner: W,
     widgets: Vec<WidgetOnBlock<'a, Message>>,
 }
 
@@ -36,7 +31,7 @@ pub enum BorderOrientation {
     Right,
 }
 
-impl<'a, Message> Block<'a, Message> {
+impl<'a, Message, W> Block<'a, Message, W> {
     pub fn title(mut self, title: impl Into<Line<'a>>) -> Self {
         self.base = self.base.title(title);
         self
@@ -72,7 +67,7 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_top(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_top_opt(widget, move |v| Some(pos(v)))
@@ -80,7 +75,7 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_bottom(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_bottom_opt(widget, move |v| Some(pos(v)))
@@ -88,7 +83,7 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_left(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_left_opt(widget, move |v| Some(pos(v)))
@@ -96,7 +91,7 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_right(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_right_opt(widget, move |v| Some(pos(v)))
@@ -104,11 +99,11 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_top_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+            base: widget.boxed(),
             orientation: BorderOrientation::Top,
             pos: Box::new(pos),
         })
@@ -116,11 +111,11 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_bottom_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+            base: widget.boxed(),
             orientation: BorderOrientation::Bottom,
             pos: Box::new(pos),
         })
@@ -128,11 +123,11 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_left_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+            base: widget.boxed(),
             orientation: BorderOrientation::Left,
             pos: Box::new(pos),
         })
@@ -140,30 +135,47 @@ impl<'a, Message> Block<'a, Message> {
 
     pub fn widget_right_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+            base: widget.boxed(),
             orientation: BorderOrientation::Right,
             pos: Box::new(pos),
         })
     }
 }
 
-impl<'a, Message> Block<'a, Message> {
+/// Construction from an unboxed widget: `W` stays a concrete type, nothing is
+/// erased into `Box<dyn Widget>`.
+impl<'a, Message, W> Block<'a, Message, W>
+where
+    W: Widget<Message>,
+{
+    pub fn new(inner: W) -> Self {
+        Self {
+            base: ratatui_widgets::block::Block::new(),
+            area: Default::default(),
+            inner,
+            widgets: vec![],
+        }
+    }
+}
+
+impl<'a, Message, W> Block<'a, Message, W> {
     fn add_widget(mut self, widget: WidgetOnBlock<'a, Message>) -> Self {
         self.widgets.push(widget);
         self
     }
 }
 
-impl<'a, Message> Widget<Message> for Block<'a, Message>
+impl<'a, Message, W> Widget<Message> for Block<'a, Message, W>
 where
     Message: std::fmt::Debug,
+    W: Widget<Message>,
 {
     fn activity(&self) -> bool {
-        self.inner.as_widget().activity()
+        self.inner.activity()
     }
 
     fn area(&self) -> Rect {
@@ -175,22 +187,22 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.inner.as_widget_mut().handle_key(key)
+        self.inner.handle_key(key)
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner.as_widget_mut().handle_click(pos)
+        self.inner.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.inner.as_widget_mut().handle_paste(content)
+        self.inner.handle_paste(content)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
         let area = self.area.get();
 
         let inner_area = self.base.inner(area);
-        self.inner.as_widget_mut().render(inner_area, buf);
+        self.inner.render(inner_area, buf);
         (&self.base).render(area, buf);
 
         self.widgets.retain_mut(|widget| {
@@ -208,23 +220,14 @@ where
                 return false;
             };
 
-            widget.base.as_widget_mut().render(pos_area, buf);
+            widget.base.render(pos_area, buf);
 
             true
         });
     }
 }
 
-impl<'a, Message> From<Block<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Block<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
-impl<'a, Message> BindArea for Block<'a, Message> {
+impl<'a, Message, W> BindArea for Block<'a, Message, W> {
     fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
         self.area = Area::Ref(area.clone());
         self
@@ -232,7 +235,7 @@ impl<'a, Message> BindArea for Block<'a, Message> {
 }
 
 struct WidgetOnBlock<'a, Message> {
-    base: Element<'a, Message>,
+    base: Box<dyn Widget<Message> + 'a>,
     orientation: BorderOrientation,
     pos: Box<dyn FnMut(Rect) -> Option<Rect> + 'a>,
 }

@@ -86,15 +86,6 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for List<'a, Message> {
     }
 }
 
-impl<'a, Message> From<List<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: List<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct ListState {
     base: ratatui_widgets::list::ListState,

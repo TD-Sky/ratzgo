@@ -10,25 +10,16 @@ pub struct Stack<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Element<'a, Message>>,
-}
-
-impl<'a, Message> From<Stack<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Stack<'a, Message>) -> Self {
-        Element::new(widget)
-    }
+    elts: Vec<Box<dyn Widget<Message> + 'a>>,
 }
 
 impl<'a, Message> Stack<'a, Message> {
-    pub fn new(elts: impl IntoIterator<Item = Element<'a, Message>>) -> Self {
+    pub fn new(elts: impl IntoIterator<Item: Widget<Message> + 'a>) -> Self {
         Self {
             area: Default::default(),
             activity: false,
             on_key: Default::default(),
-            elts: elts.into_iter().collect(),
+            elts: elts.into_iter().map(|elt| elt.boxed()).collect(),
         }
     }
 }
@@ -38,7 +29,7 @@ where
     Message: std::fmt::Debug,
 {
     fn activity(&self) -> bool {
-        self.activity || self.elts.iter().any(|v| v.as_widget().activity())
+        self.activity || self.elts.iter().any(|v| v.activity())
     }
 
     fn area(&self) -> Rect {
@@ -53,10 +44,7 @@ where
         self.elts
             .iter_mut()
             .rev()
-            .find_map(|v| {
-                let v = v.as_widget_mut();
-                v.activity().then_some(v)
-            })
+            .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_key(key))
             .or_else(|| self.on_key.key(key))
     }
@@ -65,10 +53,7 @@ where
         self.elts
             .iter_mut()
             .rev()
-            .find_map(|v| {
-                let v = v.as_widget_mut();
-                v.activity().then_some(v)
-            })
+            .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_paste(content))
     }
 
@@ -76,7 +61,7 @@ where
         let area = self.area.get();
 
         for elt in &mut self.elts {
-            elt.as_widget_mut().render(area, buf);
+            elt.render(area, buf);
         }
     }
 }
@@ -103,9 +88,7 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Stack<'a, Message> {
 #[macro_export]
 macro_rules! stack {
     ($($widget:expr),+ $(,)?) => {
-        $crate::widget::Stack::new(
-            [$(::std::convert::Into::<$crate::core::Element<_>>::into($widget)),+],
-        )
+        $crate::widget::Stack::new([$($crate::core::WidgetExt::boxed($widget)),+])
     };
 }
 pub use stack;

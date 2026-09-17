@@ -98,15 +98,6 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Paragraph<'a, Message> {
     }
 }
 
-impl<'a, Message> From<Paragraph<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Paragraph<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct ParagraphState {
     pub scroll: (u16, u16),

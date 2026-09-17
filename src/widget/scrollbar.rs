@@ -102,12 +102,3 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Scrollbar<'a, Message> {
         &mut self.on_key
     }
 }
-
-impl<'a, Message> From<Scrollbar<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Scrollbar<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}

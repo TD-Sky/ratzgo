@@ -23,7 +23,7 @@ use ratatui_crossterm::{
 };
 
 use crate::{
-    core::{Element, Widget},
+    core::Widget,
     event::{SelectEventSource, UnsyncDebounce, UnsyncQueue, YieldFg},
     utils::mem::DropGuard,
 };
@@ -39,7 +39,7 @@ where
     Message: std::fmt::Debug,
     Init: AsyncFnOnce(&mut State, &mut DefaultContext<Message, State>),
     Update: AsyncFnMut(&mut State, Message, &mut DefaultContext<Message, State>),
-    View: for<'a> Fn(&'a mut State) -> Element<'a, Message>,
+    View: for<'a> Fn(&'a mut State) -> Box<dyn Widget<Message> + 'a>,
 {
     let _restore = DropGuard::new((), |_| try_restore().expect("try restoring terminal"));
 
@@ -60,7 +60,7 @@ where
 
     let mut elt = view(state.as_mut());
     terminal.draw(|frame| {
-        elt.as_widget_mut().render(frame.area(), frame.buffer_mut());
+        elt.render(frame.area(), frame.buffer_mut());
     })?;
 
     loop {
@@ -71,7 +71,7 @@ where
                         drop(elt);
                     }
                     Some(Ok(event)) => {
-                        let msg = handle_terminal_event(event, elt.as_widget_mut());
+                        let msg = handle_terminal_event(event, elt.as_mut());
                         drop(elt);
                         match msg {
                             Some(msg) => {
@@ -127,7 +127,7 @@ where
 
         elt = view(state.as_mut());
         terminal.draw(|frame| {
-            elt.as_widget_mut().render(frame.area(), frame.buffer_mut());
+            elt.render(frame.area(), frame.buffer_mut());
         })?;
     }
 

@@ -8,13 +8,11 @@ pub mod core {
     }
     mod active;
     mod area;
-    mod element;
     mod widget;
 
     pub use action::{OnKey, OnKeyBuilder};
     pub use active::*;
     pub use area::*;
-    pub use element::*;
     pub use widget::*;
 }
 pub mod text {
@@ -24,6 +22,7 @@ pub mod widget {
     mod block;
     mod layout;
     mod list;
+    mod map_message;
     mod mount;
     mod paragraph;
     mod scrollbar;
@@ -35,6 +34,7 @@ pub mod widget {
     pub use block::*;
     pub use layout::*;
     pub use list::*;
+    pub use map_message::*;
     pub use mount::*;
     pub use paragraph::*;
     pub use scrollbar::*;

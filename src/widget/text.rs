@@ -68,15 +68,6 @@ impl<'a, Message> BindArea for SpanWidget<'a, Message> {
     }
 }
 
-impl<'a, Message> From<SpanWidget<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: SpanWidget<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug)]
 pub struct LineWidget<'a, Message> {
     base: Line<'a>,
@@ -112,15 +103,6 @@ impl<'a, Message> BindArea for LineWidget<'a, Message> {
     }
 }
 
-impl<'a, Message> From<LineWidget<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: LineWidget<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug)]
 pub struct TextWidget<'a, Message> {
     base: Text<'a>,
@@ -153,14 +135,5 @@ impl<'a, Message> BindArea for TextWidget<'a, Message> {
     fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
         self.area = Area::Ref(area.clone());
         self
-    }
-}
-
-impl<'a, Message> From<TextWidget<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: TextWidget<'a, Message>) -> Self {
-        Self::new(widget)
     }
 }

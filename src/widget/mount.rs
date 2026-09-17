@@ -33,11 +33,11 @@ impl<Message> MountPoint<Message> {
 
     pub fn mount<'a>(
         &self,
-        widget: impl Into<Element<'a, Message>>,
+        widget: impl Widget<Message> + 'a,
         constraint: impl FnOnce(Rect) -> Rect + 'a,
     ) {
         let inner = Inner {
-            elt: widget.into(),
+            elt: widget.boxed(),
             constraint: Some(Box::new(constraint)),
         };
         let inner: Inner<'static, Message> = unsafe { mem::transmute(inner) };
@@ -85,30 +85,15 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.inner
-            .borrow()
-            .as_mut()?
-            .elt
-            .as_widget_mut()
-            .handle_key(key)
+        self.inner.borrow().as_mut()?.elt.handle_key(key)
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner
-            .borrow()
-            .as_mut()?
-            .elt
-            .as_widget_mut()
-            .handle_click(pos)
+        self.inner.borrow().as_mut()?.elt.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.inner
-            .borrow()
-            .as_mut()?
-            .elt
-            .as_widget_mut()
-            .handle_paste(content)
+        self.inner.borrow().as_mut()?.elt.handle_paste(content)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
@@ -119,7 +104,7 @@ where
                 .expect("`constraint` must be `Some`"))(self.area.get());
 
             Clear.render(area, buf);
-            inner.elt.as_widget_mut().render(area, buf);
+            inner.elt.render(area, buf);
         }
     }
 }
@@ -131,17 +116,8 @@ impl<'a, Message> BindArea for MountView<'a, Message> {
     }
 }
 
-impl<'a, Message> From<MountView<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'static,
-{
-    fn from(widget: MountView<'a, Message>) -> Self {
-        Element::new(widget)
-    }
-}
-
 struct Inner<'a, Message> {
-    elt: Element<'a, Message>,
+    elt: Box<dyn Widget<Message> + 'a>,
     constraint: Option<Box<dyn FnOnce(Rect) -> Rect + 'a>>,
 }
 
