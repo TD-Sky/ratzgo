@@ -1,6 +1,6 @@
 use std::{cell::Cell, mem, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 use ratatui_widgets::scrollbar::ScrollbarState;
 pub use ratatui_widgets::scrollbar::{ScrollDirection, ScrollbarOrientation};
@@ -37,6 +37,11 @@ impl<'a, Message> Scrollbar<'a, Message> {
     pub fn orientation(mut self, orientation: ScrollbarOrientation) -> Self {
         self.orientation = orientation.clone();
         self.base = self.base.orientation(orientation);
+        self
+    }
+
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
         self
     }
 

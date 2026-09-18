@@ -3,6 +3,7 @@ use std::{any, cell::Cell, rc::Rc};
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
+    style::Style,
     text::Line,
     widgets::Widget,
 };
@@ -59,6 +60,11 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn border_type(mut self, border_type: BorderType) -> Self {
         self.base = self.base.border_type(border_type);
+        self
+    }
+
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
         self
     }
 

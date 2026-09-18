@@ -7,6 +7,7 @@ use std::{
 use ratatui_core::{
     buffer::Buffer,
     layout::{Constraint, Rect},
+    style::Style,
     widgets::StatefulWidget,
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
@@ -57,6 +58,11 @@ impl<'a, Message> Table<'a, Message> {
 
     pub fn footer(mut self, footer: Row<'a>) -> Self {
         self.base = self.base.footer(footer);
+        self
+    }
+
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
         self
     }
 }

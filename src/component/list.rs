@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::list::ListItem;
 
@@ -30,6 +30,11 @@ pub struct List<'a, Message> {
 impl<'a, Message> List<'a, Message> {
     pub fn items(mut self, items: impl IntoIterator<Item: Into<ListItem<'a>>>) -> Self {
         self.base = self.base.items(items);
+        self
+    }
+
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
         self
     }
 

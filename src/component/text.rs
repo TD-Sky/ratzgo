@@ -3,6 +3,7 @@ use std::{cell::Cell, marker::PhantomData, rc::Rc};
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
+    style::Style,
     text::{Line, Span, Text},
     widgets::Widget,
 };
@@ -40,6 +41,13 @@ pub struct SpanWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
+impl<'a, Message> SpanWidget<'a, Message> {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+}
+
 impl<'a, Message> Component<Message> for SpanWidget<'a, Message>
 where
     Message: std::fmt::Debug,
@@ -75,6 +83,13 @@ pub struct LineWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
+impl<'a, Message> LineWidget<'a, Message> {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+}
+
 impl<'a, Message> Component<Message> for LineWidget<'a, Message>
 where
     Message: std::fmt::Debug,
@@ -108,6 +123,13 @@ pub struct TextWidget<'a, Message> {
     base: Text<'a>,
     area: Area,
     _marker: PhantomData<Message>,
+}
+
+impl<'a, Message> TextWidget<'a, Message> {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
 }
 
 impl<'a, Message> Component<Message> for TextWidget<'a, Message>

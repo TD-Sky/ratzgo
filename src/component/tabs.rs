@@ -1,6 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::Widget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
 use crate::core::*;
@@ -25,6 +25,11 @@ impl<'a, Message> Tabs<'a, Message> {
 
     pub fn select(mut self, index: impl Into<Option<usize>>) -> Self {
         self.base = self.base.select(index);
+        self
+    }
+
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
         self
     }
 
