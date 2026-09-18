@@ -42,7 +42,7 @@ impl<'a, Message> List<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for List<'a, Message>
+impl<'a, Message> Component<Message> for List<'a, Message>
 where
     Message: std::fmt::Debug,
 {

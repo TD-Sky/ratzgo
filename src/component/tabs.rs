@@ -1,6 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::Widget as _};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::Widget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
 use crate::core::*;
@@ -37,7 +37,7 @@ impl<'a, Message> Tabs<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Tabs<'a, Message>
+impl<'a, Message> Component<Message> for Tabs<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -84,7 +84,7 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Tabs<'a, Message> {
 #[macro_export]
 macro_rules! tabs {
     ($($title:expr),+ $(,)?) => {
-        $crate::widget::Tabs::new(
+        $crate::component::Tabs::new(
             [$($crate::text::Line::from($title)),+],
         )
     };

@@ -4,9 +4,9 @@ use ratatui_core::{
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
-use crate::widget::{FilterKey, MapMessage};
+use crate::component::{FilterKey, MapMessage};
 
-pub trait Widget<Message>: std::fmt::Debug {
+pub trait Component<Message>: std::fmt::Debug {
     fn activity(&self) -> bool;
 
     fn area(&self) -> Rect;
@@ -36,8 +36,8 @@ pub trait Widget<Message>: std::fmt::Debug {
     }
 }
 
-pub trait WidgetExt<Message>: Widget<Message> {
-    fn boxed<'a>(self) -> Box<dyn Widget<Message> + 'a>
+pub trait ComponentExt<Message>: Component<Message> {
+    fn boxed<'a>(self) -> Box<dyn Component<Message> + 'a>
     where
         Self: Sized + 'a,
     {
@@ -60,11 +60,11 @@ pub trait WidgetExt<Message>: Widget<Message> {
     }
 }
 
-impl<Message, T> WidgetExt<Message> for T where T: Widget<Message> {}
+impl<Message, T> ComponentExt<Message> for T where T: Component<Message> {}
 
-impl<Message, T> Widget<Message> for Box<T>
+impl<Message, T> Component<Message> for Box<T>
 where
-    T: Widget<Message> + ?Sized,
+    T: Component<Message> + ?Sized,
 {
     fn activity(&self) -> bool {
         self.as_ref().activity()

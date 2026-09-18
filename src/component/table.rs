@@ -61,7 +61,7 @@ impl<'a, Message> Table<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Table<'a, Message>
+impl<'a, Message> Component<Message> for Table<'a, Message>
 where
     Message: std::fmt::Debug,
 {

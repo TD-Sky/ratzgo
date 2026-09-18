@@ -4,19 +4,19 @@ use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
     text::Line,
-    widgets::Widget as _,
+    widgets::Widget,
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::borders::{BorderType, Borders};
 
 use crate::core::*;
 
-pub fn block<'a, Message>(widget: impl Widget<Message> + 'a) -> Block<'a, Message> {
+pub fn block<'a, Message>(widget: impl Component<Message> + 'a) -> Block<'a, Message> {
     Block::new(widget.boxed())
 }
 
 #[derive(Debug)]
-pub struct Block<'a, Message, W = Box<dyn Widget<Message> + 'a>> {
+pub struct Block<'a, Message, W = Box<dyn Component<Message> + 'a>> {
     base: ratatui_widgets::block::Block<'a>,
     area: Area,
     inner: W,
@@ -67,7 +67,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_top(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_top_opt(widget, move |v| Some(pos(v)))
@@ -75,7 +75,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_bottom(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_bottom_opt(widget, move |v| Some(pos(v)))
@@ -83,7 +83,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_left(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_left_opt(widget, move |v| Some(pos(v)))
@@ -91,7 +91,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_right(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
         self.widget_right_opt(widget, move |v| Some(pos(v)))
@@ -99,7 +99,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_top_opt(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
@@ -111,7 +111,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_bottom_opt(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
@@ -123,7 +123,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_left_opt(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
@@ -135,7 +135,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 
     pub fn widget_right_opt(
         self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
         self.add_widget(WidgetOnBlock {
@@ -150,7 +150,7 @@ impl<'a, Message, W> Block<'a, Message, W> {
 /// erased into `Box<dyn Widget>`.
 impl<'a, Message, W> Block<'a, Message, W>
 where
-    W: Widget<Message>,
+    W: Component<Message>,
 {
     pub fn new(inner: W) -> Self {
         Self {
@@ -169,10 +169,10 @@ impl<'a, Message, W> Block<'a, Message, W> {
     }
 }
 
-impl<'a, Message, W> Widget<Message> for Block<'a, Message, W>
+impl<'a, Message, W> Component<Message> for Block<'a, Message, W>
 where
     Message: std::fmt::Debug,
-    W: Widget<Message>,
+    W: Component<Message>,
 {
     fn activity(&self) -> bool {
         self.inner.activity()
@@ -235,7 +235,7 @@ impl<'a, Message, W> BindArea for Block<'a, Message, W> {
 }
 
 struct WidgetOnBlock<'a, Message> {
-    base: Box<dyn Widget<Message> + 'a>,
+    base: Box<dyn Component<Message> + 'a>,
     orientation: BorderOrientation,
     pos: Box<dyn FnMut(Rect) -> Option<Rect> + 'a>,
 }

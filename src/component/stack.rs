@@ -10,11 +10,11 @@ pub struct Stack<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Box<dyn Widget<Message> + 'a>>,
+    elts: Vec<Box<dyn Component<Message> + 'a>>,
 }
 
 impl<'a, Message> Stack<'a, Message> {
-    pub fn new(elts: impl IntoIterator<Item: Widget<Message> + 'a>) -> Self {
+    pub fn new(elts: impl IntoIterator<Item: Component<Message> + 'a>) -> Self {
         Self {
             area: Default::default(),
             activity: false,
@@ -24,7 +24,7 @@ impl<'a, Message> Stack<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Stack<'a, Message>
+impl<'a, Message> Component<Message> for Stack<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -88,7 +88,7 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Stack<'a, Message> {
 #[macro_export]
 macro_rules! stack {
     ($($widget:expr),+ $(,)?) => {
-        $crate::widget::Stack::new([$($crate::core::WidgetExt::boxed($widget)),+])
+        $crate::component::Stack::new([$($crate::core::ComponentExt::boxed($widget)),+])
     };
 }
 pub use stack;

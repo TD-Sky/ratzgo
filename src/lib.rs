@@ -8,17 +8,17 @@ pub mod core {
     }
     mod active;
     mod area;
-    mod widget;
+    mod component;
 
     pub use action::{OnKey, OnKeyBuilder};
     pub use active::*;
     pub use area::*;
-    pub use widget::*;
+    pub use component::*;
 }
 pub mod text {
     pub use ratatui_core::text::{Line, Span, Text};
 }
-pub mod widget {
+pub mod component {
     mod block;
     mod filter_key;
     mod layout;

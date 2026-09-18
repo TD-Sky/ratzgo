@@ -14,14 +14,14 @@ pub struct Layout<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Box<dyn Widget<Message> + 'a>>,
+    elts: Vec<Box<dyn Component<Message> + 'a>>,
 }
 
 impl<'a, Message> Layout<'a, Message> {
     pub fn vertical<C, W>(constraints: C, widgets: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item: Widget<Message> + 'a>,
+        W: IntoIterator<Item: Component<Message> + 'a>,
     {
         Self::new(Direction::Vertical, constraints, widgets)
     }
@@ -29,7 +29,7 @@ impl<'a, Message> Layout<'a, Message> {
     pub fn horizontal<C, W>(constraints: C, widgets: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item: Widget<Message> + 'a>,
+        W: IntoIterator<Item: Component<Message> + 'a>,
     {
         Self::new(Direction::Horizontal, constraints, widgets)
     }
@@ -47,7 +47,7 @@ impl<'a, Message> Layout<'a, Message> {
     fn new<C, W>(direction: Direction, constraints: C, widgets: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item: Widget<Message> + 'a>,
+        W: IntoIterator<Item: Component<Message> + 'a>,
     {
         let constraints: Vec<_> = constraints.into_iter().collect();
         let elts: Vec<_> = widgets.into_iter().map(|elt| elt.boxed()).collect();
@@ -64,7 +64,7 @@ impl<'a, Message> Layout<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Layout<'a, Message>
+impl<'a, Message> Component<Message> for Layout<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -134,9 +134,9 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Layout<'a, Message> {
 #[macro_export]
 macro_rules! column {
     ($constraints:expr; [$($widget:expr),+ $(,)?]) => {
-        $crate::widget::Layout::vertical(
+        $crate::component::Layout::vertical(
             $constraints,
-            [$($crate::core::WidgetExt::boxed($widget)),+],
+            [$($crate::core::ComponentExt::boxed($widget)),+],
         )
     };
 }
@@ -145,9 +145,9 @@ pub use column;
 #[macro_export]
 macro_rules! row {
     ($constraints:expr; [$($widget:expr),+ $(,)?]) => {
-        $crate::widget::Layout::horizontal(
+        $crate::component::Layout::horizontal(
             $constraints,
-            [$($crate::core::WidgetExt::boxed($widget)),+],
+            [$($crate::core::ComponentExt::boxed($widget)),+],
         )
     };
 }

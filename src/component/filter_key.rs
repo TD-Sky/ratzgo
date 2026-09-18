@@ -6,7 +6,7 @@ use ratatui_core::{
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
-use crate::core::Widget;
+use crate::core::Component;
 
 pub struct FilterKey<'a, Message, W> {
     widget: W,
@@ -39,9 +39,9 @@ where
     }
 }
 
-impl<'a, Message, W> Widget<Message> for FilterKey<'a, Message, W>
+impl<'a, Message, W> Component<Message> for FilterKey<'a, Message, W>
 where
-    W: Widget<Message>,
+    W: Component<Message>,
 {
     fn activity(&self) -> bool {
         self.widget.activity()

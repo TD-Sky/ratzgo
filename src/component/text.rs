@@ -4,7 +4,7 @@ use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
     text::{Line, Span, Text},
-    widgets::Widget as _,
+    widgets::Widget,
 };
 
 use crate::core::*;
@@ -40,7 +40,7 @@ pub struct SpanWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
-impl<'a, Message> Widget<Message> for SpanWidget<'a, Message>
+impl<'a, Message> Component<Message> for SpanWidget<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -75,7 +75,7 @@ pub struct LineWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
-impl<'a, Message> Widget<Message> for LineWidget<'a, Message>
+impl<'a, Message> Component<Message> for LineWidget<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -110,7 +110,7 @@ pub struct TextWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
-impl<'a, Message> Widget<Message> for TextWidget<'a, Message>
+impl<'a, Message> Component<Message> for TextWidget<'a, Message>
 where
     Message: std::fmt::Debug,
 {

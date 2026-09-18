@@ -51,7 +51,7 @@ impl<'a, Message> Scrollbar<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Scrollbar<'a, Message>
+impl<'a, Message> Component<Message> for Scrollbar<'a, Message>
 where
     Message: std::fmt::Debug,
 {

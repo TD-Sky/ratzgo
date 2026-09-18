@@ -3,7 +3,7 @@ use std::{any, cell::Cell, mem, rc::Rc};
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    widgets::Widget as _,
+    widgets::Widget,
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 use ratatui_widgets::clear::Clear;
@@ -33,7 +33,7 @@ impl<Message> MountPoint<Message> {
 
     pub fn mount<'a>(
         &self,
-        widget: impl Widget<Message> + 'a,
+        widget: impl Component<Message> + 'a,
         constraint: impl FnOnce(Rect) -> Rect + 'a,
     ) {
         let inner = Inner {
@@ -68,7 +68,7 @@ impl<'a, Message> Drop for MountView<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for MountView<'a, Message>
+impl<'a, Message> Component<Message> for MountView<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -117,7 +117,7 @@ impl<'a, Message> BindArea for MountView<'a, Message> {
 }
 
 struct Inner<'a, Message> {
-    elt: Box<dyn Widget<Message> + 'a>,
+    elt: Box<dyn Component<Message> + 'a>,
     constraint: Option<Box<dyn FnOnce(Rect) -> Rect + 'a>>,
 }
 

@@ -1,6 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget as _};
+use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::paragraph::Wrap;
 
@@ -48,7 +48,7 @@ impl<'a, Message> Paragraph<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Paragraph<'a, Message>
+impl<'a, Message> Component<Message> for Paragraph<'a, Message>
 where
     Message: std::fmt::Debug,
 {

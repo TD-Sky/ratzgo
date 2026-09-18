@@ -6,7 +6,7 @@ use ratatui_core::{
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
-use crate::core::Widget;
+use crate::core::Component;
 
 pub struct MapMessage<'a, Message, O, W> {
     widget: W,
@@ -37,11 +37,11 @@ where
     }
 }
 
-impl<'a, Message, O, W> Widget<O> for MapMessage<'a, Message, O, W>
+impl<'a, Message, O, W> Component<O> for MapMessage<'a, Message, O, W>
 where
     Message: 'a,
     O: 'a,
-    W: Widget<Message>,
+    W: Component<Message>,
 {
     fn activity(&self) -> bool {
         self.widget.activity()
