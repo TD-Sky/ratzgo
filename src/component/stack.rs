@@ -14,12 +14,12 @@ pub struct Stack<'a, Message> {
 }
 
 impl<'a, Message> Stack<'a, Message> {
-    pub fn new(elts: impl IntoIterator<Item: Component<Message> + 'a>) -> Self {
+    pub fn new(elts: impl IntoIterator<Item = Box<dyn Component<Message> + 'a>>) -> Self {
         Self {
             area: Default::default(),
             activity: false,
             on_key: Default::default(),
-            elts: elts.into_iter().map(|elt| elt.boxed()).collect(),
+            elts: elts.into_iter().collect(),
         }
     }
 }

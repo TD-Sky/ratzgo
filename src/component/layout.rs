@@ -21,7 +21,7 @@ impl<'a, Message> Layout<'a, Message> {
     pub fn vertical<C, W>(constraints: C, widgets: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item: Component<Message> + 'a>,
+        W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
         Self::new(Direction::Vertical, constraints, widgets)
     }
@@ -29,7 +29,7 @@ impl<'a, Message> Layout<'a, Message> {
     pub fn horizontal<C, W>(constraints: C, widgets: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item: Component<Message> + 'a>,
+        W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
         Self::new(Direction::Horizontal, constraints, widgets)
     }
@@ -47,10 +47,10 @@ impl<'a, Message> Layout<'a, Message> {
     fn new<C, W>(direction: Direction, constraints: C, widgets: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item: Component<Message> + 'a>,
+        W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
         let constraints: Vec<_> = constraints.into_iter().collect();
-        let elts: Vec<_> = widgets.into_iter().map(|elt| elt.boxed()).collect();
+        let elts: Vec<_> = widgets.into_iter().collect();
 
         debug_assert_eq!(constraints.len(), elts.len());
 

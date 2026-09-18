@@ -11,8 +11,13 @@ pub use ratatui_widgets::borders::{BorderType, Borders};
 
 use crate::core::*;
 
-pub fn block<'a, Message>(widget: impl Component<Message> + 'a) -> Block<'a, Message> {
-    Block::new(widget.boxed())
+pub fn block<'a, Message, W>(widget: W) -> Block<'a, Message, W> {
+    Block {
+        base: ratatui_widgets::block::Block::new(),
+        area: Default::default(),
+        inner: widget,
+        widgets: vec![],
+    }
 }
 
 #[derive(Debug)]
@@ -143,22 +148,6 @@ impl<'a, Message, W> Block<'a, Message, W> {
             orientation: BorderOrientation::Right,
             pos: Box::new(pos),
         })
-    }
-}
-
-/// Construction from an unboxed widget: `W` stays a concrete type, nothing is
-/// erased into `Box<dyn Widget>`.
-impl<'a, Message, W> Block<'a, Message, W>
-where
-    W: Component<Message>,
-{
-    pub fn new(inner: W) -> Self {
-        Self {
-            base: ratatui_widgets::block::Block::new(),
-            area: Default::default(),
-            inner,
-            widgets: vec![],
-        }
     }
 }
 
