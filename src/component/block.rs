@@ -18,6 +18,7 @@ pub fn block<'a, Message, W>(widget: W) -> Block<'a, Message, W> {
         area: Default::default(),
         inner: widget,
         widgets: vec![],
+        on_key: Default::default(),
     }
 }
 
@@ -27,6 +28,7 @@ pub struct Block<'a, Message, W = Box<dyn Component<Message> + 'a>> {
     area: Area,
     inner: W,
     widgets: Vec<WidgetOnBlock<'a, Message>>,
+    on_key: OnKey<'a, Message>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -182,7 +184,7 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.inner.handle_key(key)
+        self.inner.handle_key(key).or_else(|| self.on_key.key(key))
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
@@ -226,6 +228,12 @@ impl<'a, Message, W> BindArea for Block<'a, Message, W> {
     fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
         self.area = Area::Ref(area.clone());
         self
+    }
+}
+
+impl<'a, Message> OnKeyBuilder<'a, Message> for Block<'a, Message> {
+    fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
+        &mut self.on_key
     }
 }
 
