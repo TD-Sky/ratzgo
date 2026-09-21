@@ -13,7 +13,10 @@ use ratatui_core::{
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::table::Row;
 
-use crate::{core::*, scroll::ScrollAction};
+use crate::{
+    core::*,
+    scroll::{ScrollAction, ScrollPosition},
+};
 
 pub fn table<'a, Message>(state: &'a mut TableState) -> Table<'a, Message> {
     Table {
@@ -89,6 +92,9 @@ where
 
     fn adapt(&mut self, buf: &mut Buffer) {
         (&self.base).render(self.state.area.get(), buf, self.state);
+
+        let offset = self.state.base.offset();
+        self.state.pos_vertical.set(offset);
     }
 }
 
@@ -115,6 +121,7 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Table<'a, Message> {
 pub struct TableState {
     base: ratatui_widgets::table::TableState,
     pub area: Area,
+    pub pos_vertical: ScrollPosition,
 }
 
 impl Deref for TableState {
