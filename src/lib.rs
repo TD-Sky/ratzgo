@@ -61,9 +61,11 @@ pub mod event {
 pub mod log;
 pub mod scroll {
     mod action;
+    mod position;
     mod reposition;
 
     pub use action::*;
+    pub use position::*;
     pub use reposition::*;
 }
 mod utils {

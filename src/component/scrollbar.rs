@@ -5,13 +5,13 @@ use ratatui_crossterm::crossterm::event::KeyEvent;
 use ratatui_widgets::scrollbar::ScrollbarState;
 pub use ratatui_widgets::scrollbar::{ScrollDirection, ScrollbarOrientation};
 
-use crate::core::*;
+use crate::{core::*, scroll::ScrollPosition};
 
 #[derive(Debug, Clone)]
 pub struct ScrollbarParams {
     pub content_length: usize,
     pub viewport: Area,
-    pub position: usize,
+    pub position: ScrollPosition,
 }
 
 pub fn scrollbar<'a, Message>(params: ScrollbarParams) -> Scrollbar<'a, Message> {
@@ -87,7 +87,7 @@ where
         let max_offset = self.params.content_length.saturating_sub(viewport_length);
         let mut state = ScrollbarState::default()
             .content_length(self.params.content_length)
-            .position(self.params.position.min(max_offset))
+            .position(self.params.position.get().min(max_offset))
             .content_length(max_offset + 1)
             .viewport_content_length(viewport_length);
 

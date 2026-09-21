@@ -8,7 +8,10 @@ use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::Stateful
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::list::ListItem;
 
-use crate::{core::*, scroll::ScrollAction};
+use crate::{
+    core::*,
+    scroll::{ScrollAction, ScrollPosition},
+};
 
 pub fn list<'a, Message>(state: &'a mut ListState) -> List<'a, Message> {
     List {
@@ -69,6 +72,9 @@ where
 
     fn adapt(&mut self, buf: &mut Buffer) {
         (&self.base).render(self.state.area.get(), buf, self.state);
+
+        let offset = self.state.base.offset();
+        self.state.position.set(offset);
     }
 }
 
@@ -95,6 +101,7 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for List<'a, Message> {
 pub struct ListState {
     base: ratatui_widgets::list::ListState,
     pub area: Area,
+    pub position: ScrollPosition,
 }
 
 impl Deref for ListState {
