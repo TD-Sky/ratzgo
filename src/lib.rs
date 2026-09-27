@@ -21,6 +21,7 @@ pub mod text {
 pub mod component {
     mod block;
     mod filter_key;
+    mod func;
     mod layout;
     mod list;
     mod map_message;
@@ -34,6 +35,7 @@ pub mod component {
 
     pub use block::*;
     pub use filter_key::*;
+    pub use func::*;
     pub use layout::*;
     pub use list::*;
     pub use map_message::*;

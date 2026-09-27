@@ -243,7 +243,10 @@ struct WidgetOnBlock<'a, Message> {
     pos: Box<dyn FnMut(Rect) -> Option<Rect> + 'a>,
 }
 
-impl<'a, Message: std::fmt::Debug> std::fmt::Debug for WidgetOnBlock<'a, Message> {
+impl<'a, Message> std::fmt::Debug for WidgetOnBlock<'a, Message>
+where
+    Message: std::fmt::Debug,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WidgetOnBlock")
             .field("base", &self.base)
