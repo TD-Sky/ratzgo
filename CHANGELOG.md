@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-10-01
+
+### Features
+
+- *(no category)* FilterKey
+
+- *(no category)* Rename `Widget` to `Component`
+
+- *(no category)* Containers only accept `Box<dyn Component>` elements
+
+- *(no category)* Style method
+
+- *(no category)* Block.on_key
+
+- *(no category)* ScrollPosition
+
+- *(no category)* From_render
+
+
 ## [0.1.3] - 2026-09-16
 
 ### Features
