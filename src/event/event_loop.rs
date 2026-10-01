@@ -23,7 +23,7 @@ use ratatui_crossterm::{
 };
 
 use crate::{
-    core::{Element, Widget},
+    core::Component,
     event::{SelectEventSource, UnsyncDebounce, UnsyncQueue, YieldFg},
     utils::mem::DropGuard,
 };
@@ -39,7 +39,7 @@ where
     Message: std::fmt::Debug,
     Init: AsyncFnOnce(&mut State, &mut DefaultContext<Message, State>),
     Update: AsyncFnMut(&mut State, Message, &mut DefaultContext<Message, State>),
-    View: for<'a> Fn(&'a mut State) -> Element<'a, Message>,
+    View: for<'a> Fn(&'a mut State) -> Box<dyn Component<Message> + 'a>,
 {
     let _restore = DropGuard::new((), |_| try_restore().expect("try restoring terminal"));
 
@@ -58,9 +58,9 @@ where
         return Ok(());
     }
 
-    let mut elt = view(state.as_mut());
+    let mut cpt = view(state.as_mut());
     terminal.draw(|frame| {
-        elt.as_widget_mut().render(frame.area(), frame.buffer_mut());
+        cpt.render(frame.area(), frame.buffer_mut());
     })?;
 
     loop {
@@ -68,18 +68,18 @@ where
             (event, _) = (&mut event_stream).into_future() => {
                 match event {
                     Some(Ok(Event::Resize(..))) => {
-                        drop(elt);
+                        drop(cpt);
                     }
                     Some(Ok(event)) => {
-                        let msg = handle_terminal_event(event, elt.as_widget_mut());
-                        drop(elt);
+                        let msg = handle_terminal_event(event, cpt.as_mut());
+                        drop(cpt);
                         match msg {
                             Some(msg) => {
                                 ctx.queue.push(msg);
                             }
                             None => {
                                 // NOTE: Refresh event callback
-                                elt = view(state.as_mut());
+                                cpt = view(state.as_mut());
                                 continue;
                             }
                         }
@@ -90,7 +90,7 @@ where
             }
 
             msg = ctx.queue.pop().fuse() => {
-                drop(elt);
+                drop(cpt);
                 update(state.as_mut(), msg, &mut ctx).await;
 
                 if ctx.exit {
@@ -100,7 +100,7 @@ where
 
             msg = ctx.select.next().fuse() => {
                 let msg = msg.expect("always get `Some` if ready");
-                drop(elt);
+                drop(cpt);
                 update(state.as_mut(), msg, &mut ctx).await;
 
                 if ctx.exit {
@@ -125,9 +125,9 @@ where
             }
         }
 
-        elt = view(state.as_mut());
+        cpt = view(state.as_mut());
         terminal.draw(|frame| {
-            elt.as_widget_mut().render(frame.area(), frame.buffer_mut());
+            cpt.render(frame.area(), frame.buffer_mut());
         })?;
     }
 
@@ -169,7 +169,10 @@ where
     terminal.resize(area)
 }
 
-fn handle_terminal_event<Message>(event: Event, root: &mut dyn Widget<Message>) -> Option<Message> {
+fn handle_terminal_event<Message>(
+    event: Event,
+    root: &mut dyn Component<Message>,
+) -> Option<Message> {
     match event {
         Event::Key(event) => root.handle_key(&event),
         Event::Mouse(event) => match event.kind {

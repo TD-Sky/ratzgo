@@ -3,7 +3,7 @@ use std::{any, cell::Cell, mem, rc::Rc};
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
-    widgets::Widget as _,
+    widgets::Widget,
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 use ratatui_widgets::clear::Clear;
@@ -33,11 +33,11 @@ impl<Message> MountPoint<Message> {
 
     pub fn mount<'a>(
         &self,
-        widget: impl Into<Element<'a, Message>>,
+        component: impl Component<Message> + 'a,
         constraint: impl FnOnce(Rect) -> Rect + 'a,
     ) {
         let inner = Inner {
-            elt: widget.into(),
+            component: component.boxed(),
             constraint: Some(Box::new(constraint)),
         };
         let inner: Inner<'static, Message> = unsafe { mem::transmute(inner) };
@@ -68,7 +68,7 @@ impl<'a, Message> Drop for MountView<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for MountView<'a, Message>
+impl<'a, Message> Component<Message> for MountView<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -85,29 +85,18 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.inner
-            .borrow()
-            .as_mut()?
-            .elt
-            .as_widget_mut()
-            .handle_key(key)
+        self.inner.borrow().as_mut()?.component.handle_key(key)
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner
-            .borrow()
-            .as_mut()?
-            .elt
-            .as_widget_mut()
-            .handle_click(pos)
+        self.inner.borrow().as_mut()?.component.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
         self.inner
             .borrow()
             .as_mut()?
-            .elt
-            .as_widget_mut()
+            .component
             .handle_paste(content)
     }
 
@@ -119,7 +108,7 @@ where
                 .expect("`constraint` must be `Some`"))(self.area.get());
 
             Clear.render(area, buf);
-            inner.elt.as_widget_mut().render(area, buf);
+            inner.component.render(area, buf);
         }
     }
 }
@@ -131,17 +120,8 @@ impl<'a, Message> BindArea for MountView<'a, Message> {
     }
 }
 
-impl<'a, Message> From<MountView<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'static,
-{
-    fn from(widget: MountView<'a, Message>) -> Self {
-        Element::new(widget)
-    }
-}
-
 struct Inner<'a, Message> {
-    elt: Element<'a, Message>,
+    component: Box<dyn Component<Message> + 'a>,
     constraint: Option<Box<dyn FnOnce(Rect) -> Rect + 'a>>,
 }
 
@@ -151,7 +131,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Inner")
-            .field("elt", &self.elt)
+            .field("component", &self.component)
             .field(
                 "constraint",
                 &format_args!("<closure of `{}`>", any::type_name_of_val(&self.constraint)),

@@ -29,10 +29,10 @@ ratzgo is a **composable**, **async-first**, **Elm‑like** ratatui framework. R
 
 ## Features
 
-- **Composable**: Compose view units `ratzgo::core::Widget` however you like.
+- **Composable**: Compose view units `raztgo::core::Component` however you like.
 - **Async-first**: The application runs inside an async event loop.
 - **Elm-like**: *View-Message-Update* architecture, implemented in Rust with async support.
-- **Controllable reactive**: Control whether a widget reacts to events via `ratzgo::core::Widget::active`.
+- **Controllable reactive**: Control whether a component reacts to events via `raztgo::core::Component::active`.
 - **Message passing**: Send message directly, or spawn background tasks that return message with `UnsyncQueue`.
 - **Custom event sources**: Listen to multiple `Stream`s simultaneously using `SelectEventSource`.
 - **Yield foreground**: Hand back interactive control to the terminal with `YieldFg`.

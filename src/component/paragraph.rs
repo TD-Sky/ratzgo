@@ -1,6 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Text, widgets::Widget as _};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Text, widgets::Widget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::paragraph::Wrap;
 
@@ -37,6 +37,11 @@ impl<'a, Message> Paragraph<'a, Message> {
         self
     }
 
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+
     pub fn decorate<F>(mut self, f: F) -> Self
     where
         F: FnOnce(
@@ -48,7 +53,7 @@ impl<'a, Message> Paragraph<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Paragraph<'a, Message>
+impl<'a, Message> Component<Message> for Paragraph<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -95,15 +100,6 @@ impl<'a, Message> Activable for Paragraph<'a, Message> {
 impl<'a, Message> OnKeyBuilder<'a, Message> for Paragraph<'a, Message> {
     fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
         &mut self.on_key
-    }
-}
-
-impl<'a, Message> From<Paragraph<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Paragraph<'a, Message>) -> Self {
-        Self::new(widget)
     }
 }
 

@@ -14,6 +14,24 @@ impl Default for Area {
     }
 }
 
+impl From<Rect> for Area {
+    fn from(value: Rect) -> Self {
+        Self::Literal(value)
+    }
+}
+
+impl From<Rc<Cell<Rect>>> for Area {
+    fn from(value: Rc<Cell<Rect>>) -> Self {
+        Self::Ref(value)
+    }
+}
+
+impl From<&Rc<Cell<Rect>>> for Area {
+    fn from(value: &Rc<Cell<Rect>>) -> Self {
+        Self::Ref(value.clone())
+    }
+}
+
 impl Area {
     pub fn get(&self) -> Rect {
         match self {

@@ -8,22 +8,23 @@ pub mod core {
     }
     mod active;
     mod area;
-    mod element;
-    mod widget;
+    mod component;
 
     pub use action::{OnKey, OnKeyBuilder};
     pub use active::*;
     pub use area::*;
-    pub use element::*;
-    pub use widget::*;
+    pub use component::*;
 }
 pub mod text {
     pub use ratatui_core::text::{Line, Span, Text};
 }
-pub mod widget {
+pub mod component {
     mod block;
+    mod filter_key;
+    mod func;
     mod layout;
     mod list;
+    mod map_message;
     mod mount;
     mod paragraph;
     mod scrollbar;
@@ -33,8 +34,11 @@ pub mod widget {
     mod text;
 
     pub use block::*;
+    pub use filter_key::*;
+    pub use func::*;
     pub use layout::*;
     pub use list::*;
+    pub use map_message::*;
     pub use mount::*;
     pub use paragraph::*;
     pub use scrollbar::*;
@@ -59,9 +63,11 @@ pub mod event {
 pub mod log;
 pub mod scroll {
     mod action;
+    mod position;
     mod reposition;
 
     pub use action::*;
+    pub use position::*;
     pub use reposition::*;
 }
 mod utils {

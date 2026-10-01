@@ -1,17 +1,17 @@
 use std::{cell::Cell, mem, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 use ratatui_widgets::scrollbar::ScrollbarState;
 pub use ratatui_widgets::scrollbar::{ScrollDirection, ScrollbarOrientation};
 
-use crate::core::*;
+use crate::{core::*, scroll::ScrollPosition};
 
 #[derive(Debug, Clone)]
 pub struct ScrollbarParams {
     pub content_length: usize,
     pub viewport: Area,
-    pub position: usize,
+    pub position: ScrollPosition,
 }
 
 pub fn scrollbar<'a, Message>(params: ScrollbarParams) -> Scrollbar<'a, Message> {
@@ -40,6 +40,11 @@ impl<'a, Message> Scrollbar<'a, Message> {
         self
     }
 
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+
     pub fn decorate<F>(mut self, f: F) -> Self
     where
         F: FnOnce(
@@ -51,7 +56,7 @@ impl<'a, Message> Scrollbar<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Scrollbar<'a, Message>
+impl<'a, Message> Component<Message> for Scrollbar<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -82,7 +87,7 @@ where
         let max_offset = self.params.content_length.saturating_sub(viewport_length);
         let mut state = ScrollbarState::default()
             .content_length(self.params.content_length)
-            .position(self.params.position.min(max_offset))
+            .position(self.params.position.get().min(max_offset))
             .content_length(max_offset + 1)
             .viewport_content_length(viewport_length);
 
@@ -100,14 +105,5 @@ impl<'a, Message> BindArea for Scrollbar<'a, Message> {
 impl<'a, Message> OnKeyBuilder<'a, Message> for Scrollbar<'a, Message> {
     fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
         &mut self.on_key
-    }
-}
-
-impl<'a, Message> From<Scrollbar<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Scrollbar<'a, Message>) -> Self {
-        Self::new(widget)
     }
 }

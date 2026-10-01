@@ -3,8 +3,9 @@ use std::{cell::Cell, marker::PhantomData, rc::Rc};
 use ratatui_core::{
     buffer::Buffer,
     layout::Rect,
+    style::Style,
     text::{Line, Span, Text},
-    widgets::Widget as _,
+    widgets::Widget,
 };
 
 use crate::core::*;
@@ -40,7 +41,14 @@ pub struct SpanWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
-impl<'a, Message> Widget<Message> for SpanWidget<'a, Message>
+impl<'a, Message> SpanWidget<'a, Message> {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+}
+
+impl<'a, Message> Component<Message> for SpanWidget<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -68,15 +76,6 @@ impl<'a, Message> BindArea for SpanWidget<'a, Message> {
     }
 }
 
-impl<'a, Message> From<SpanWidget<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: SpanWidget<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug)]
 pub struct LineWidget<'a, Message> {
     base: Line<'a>,
@@ -84,7 +83,14 @@ pub struct LineWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
-impl<'a, Message> Widget<Message> for LineWidget<'a, Message>
+impl<'a, Message> LineWidget<'a, Message> {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+}
+
+impl<'a, Message> Component<Message> for LineWidget<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -112,15 +118,6 @@ impl<'a, Message> BindArea for LineWidget<'a, Message> {
     }
 }
 
-impl<'a, Message> From<LineWidget<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: LineWidget<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug)]
 pub struct TextWidget<'a, Message> {
     base: Text<'a>,
@@ -128,7 +125,14 @@ pub struct TextWidget<'a, Message> {
     _marker: PhantomData<Message>,
 }
 
-impl<'a, Message> Widget<Message> for TextWidget<'a, Message>
+impl<'a, Message> TextWidget<'a, Message> {
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+}
+
+impl<'a, Message> Component<Message> for TextWidget<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -153,14 +157,5 @@ impl<'a, Message> BindArea for TextWidget<'a, Message> {
     fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
         self.area = Area::Ref(area.clone());
         self
-    }
-}
-
-impl<'a, Message> From<TextWidget<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: TextWidget<'a, Message>) -> Self {
-        Self::new(widget)
     }
 }

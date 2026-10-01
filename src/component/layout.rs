@@ -14,33 +14,24 @@ pub struct Layout<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Element<'a, Message>>,
-}
-
-impl<'a, Message> From<Layout<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Layout<'a, Message>) -> Self {
-        Element::new(widget)
-    }
+    components: Vec<Box<dyn Component<Message> + 'a>>,
 }
 
 impl<'a, Message> Layout<'a, Message> {
-    pub fn vertical<C, W>(constraints: C, widgets: W) -> Self
+    pub fn vertical<C, W>(constraints: C, components: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item = Element<'a, Message>>,
+        W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
-        Self::new(Direction::Vertical, constraints, widgets)
+        Self::new(Direction::Vertical, constraints, components)
     }
 
-    pub fn horizontal<C, W>(constraints: C, widgets: W) -> Self
+    pub fn horizontal<C, W>(constraints: C, components: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item = Element<'a, Message>>,
+        W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
-        Self::new(Direction::Horizontal, constraints, widgets)
+        Self::new(Direction::Horizontal, constraints, components)
     }
 
     pub fn decorate<F>(mut self, f: F) -> Self
@@ -53,32 +44,32 @@ impl<'a, Message> Layout<'a, Message> {
 }
 
 impl<'a, Message> Layout<'a, Message> {
-    fn new<C, W>(direction: Direction, constraints: C, widgets: W) -> Self
+    fn new<C, W>(direction: Direction, constraints: C, components: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
-        W: IntoIterator<Item = Element<'a, Message>>,
+        W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
         let constraints: Vec<_> = constraints.into_iter().collect();
-        let elts: Vec<_> = widgets.into_iter().collect();
+        let components: Vec<_> = components.into_iter().collect();
 
-        debug_assert_eq!(constraints.len(), elts.len());
+        debug_assert_eq!(constraints.len(), components.len());
 
         Self {
             area: Default::default(),
             activity: false,
             on_key: OnKey::default(),
             base: ratatui_core::layout::Layout::new(direction, constraints),
-            elts,
+            components,
         }
     }
 }
 
-impl<'a, Message> Widget<Message> for Layout<'a, Message>
+impl<'a, Message> Component<Message> for Layout<'a, Message>
 where
     Message: std::fmt::Debug,
 {
     fn activity(&self) -> bool {
-        self.activity || self.elts.iter().any(|v| v.as_widget().activity())
+        self.activity || self.components.iter().any(|v| v.activity())
     }
 
     fn area(&self) -> Rect {
@@ -90,12 +81,9 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
-            .find_map(|v| {
-                let v = v.as_widget_mut();
-                v.activity().then_some(v)
-            })
+            .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_key(key))
             .or_else(|| self.on_key.key(key))
     }
@@ -103,26 +91,27 @@ where
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
         // TODO: click which part
 
-        let widget = self.elts.iter_mut().find_map(|v| {
-            let v = v.as_widget_mut();
-            v.area().contains(pos).then_some(v)
-        })?;
-        widget.handle_click(pos)
+        let cpt = self
+            .components
+            .iter_mut()
+            .find_map(|v| v.area().contains(pos).then_some(v))?;
+        cpt.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
-            .find_map(|v| {
-                let v = v.as_widget_mut();
-                v.activity().then_some(v)
-            })
+            .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_paste(content))
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        for (elt, &area) in self.elts.iter_mut().zip(&*self.base.split(self.area.get())) {
-            elt.as_widget_mut().render(area, buf);
+        for (cpt, &area) in self
+            .components
+            .iter_mut()
+            .zip(&*self.base.split(self.area.get()))
+        {
+            cpt.render(area, buf);
         }
     }
 }
@@ -148,10 +137,10 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Layout<'a, Message> {
 
 #[macro_export]
 macro_rules! column {
-    ($constraints:expr; [$($widget:expr),+ $(,)?]) => {
-        $crate::widget::Layout::vertical(
+    ($constraints:expr; [$($cpt:expr),+ $(,)?]) => {
+        $crate::component::Layout::vertical(
             $constraints,
-            [$(::std::convert::Into::<$crate::core::Element<_>>::into($widget)),+],
+            [$($crate::core::ComponentExt::boxed($cpt)),+],
         )
     };
 }
@@ -159,10 +148,10 @@ pub use column;
 
 #[macro_export]
 macro_rules! row {
-    ($constraints:expr; [$($widget:expr),+ $(,)?]) => {
-        $crate::widget::Layout::horizontal(
+    ($constraints:expr; [$($cpt:expr),+ $(,)?]) => {
+        $crate::component::Layout::horizontal(
             $constraints,
-            [$(::std::convert::Into::<$crate::core::Element<_>>::into($widget)),+],
+            [$($crate::core::ComponentExt::boxed($cpt)),+],
         )
     };
 }

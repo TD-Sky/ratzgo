@@ -4,14 +4,22 @@ use std::{
     rc::Rc,
 };
 
-use ratatui_core::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+use ratatui_core::{
+    buffer::Buffer,
+    layout::{Constraint, Rect},
+    style::Style,
+    widgets::StatefulWidget,
+};
 use ratatui_crossterm::crossterm::event::KeyEvent;
-pub use ratatui_widgets::list::ListItem;
+pub use ratatui_widgets::table::Row;
 
-use crate::{core::*, scroll::ScrollAction};
+use crate::{
+    core::*,
+    scroll::{ScrollAction, ScrollPosition},
+};
 
-pub fn list<'a, Message>(state: &'a mut ListState) -> List<'a, Message> {
-    List {
+pub fn table<'a, Message>(state: &'a mut TableState) -> Table<'a, Message> {
+    Table {
         state,
         base: Default::default(),
         activity: false,
@@ -20,29 +28,49 @@ pub fn list<'a, Message>(state: &'a mut ListState) -> List<'a, Message> {
 }
 
 #[derive(Debug)]
-pub struct List<'a, Message> {
-    state: &'a mut ListState,
-    base: ratatui_widgets::list::List<'a>,
+pub struct Table<'a, Message> {
+    state: &'a mut TableState,
+    base: ratatui_widgets::table::Table<'a>,
     activity: bool,
     on_key: OnKey<'a, Message>,
 }
 
-impl<'a, Message> List<'a, Message> {
-    pub fn items(mut self, items: impl IntoIterator<Item: Into<ListItem<'a>>>) -> Self {
-        self.base = self.base.items(items);
-        self
-    }
-
+impl<'a, Message> Table<'a, Message> {
     pub fn decorate<F>(mut self, f: F) -> Self
     where
-        F: FnOnce(ratatui_widgets::list::List<'a>) -> ratatui_widgets::list::List<'a>,
+        F: FnOnce(ratatui_widgets::table::Table<'a>) -> ratatui_widgets::table::Table<'a>,
     {
         self.base = f(self.base);
         self
     }
+
+    pub fn header(mut self, header: Row<'a>) -> Self {
+        self.base = self.base.header(header);
+        self
+    }
+
+    pub fn widths(mut self, widths: impl IntoIterator<Item: Into<Constraint>>) -> Self {
+        self.base = self.base.widths(widths);
+        self
+    }
+
+    pub fn rows(mut self, rows: impl IntoIterator<Item = Row<'a>>) -> Self {
+        self.base = self.base.rows(rows);
+        self
+    }
+
+    pub fn footer(mut self, footer: Row<'a>) -> Self {
+        self.base = self.base.footer(footer);
+        self
+    }
+
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
 }
 
-impl<'a, Message> Widget<Message> for List<'a, Message>
+impl<'a, Message> Component<Message> for Table<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -64,63 +92,58 @@ where
 
     fn adapt(&mut self, buf: &mut Buffer) {
         (&self.base).render(self.state.area.get(), buf, self.state);
+
+        let offset = self.state.base.offset();
+        self.state.pos_vertical.set(offset);
     }
 }
 
-impl<'a, Message> BindArea for List<'a, Message> {
+impl<'a, Message> BindArea for Table<'a, Message> {
     fn bind_area(self, area: &Rc<Cell<Rect>>) -> Self {
         self.state.area = Area::Ref(area.clone());
         self
     }
 }
 
-impl<'a, Message> Activable for List<'a, Message> {
+impl<'a, Message> Activable for Table<'a, Message> {
     fn active_mut(&mut self) -> &mut bool {
         &mut self.activity
     }
 }
 
-impl<'a, Message> OnKeyBuilder<'a, Message> for List<'a, Message> {
+impl<'a, Message> OnKeyBuilder<'a, Message> for Table<'a, Message> {
     fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
         &mut self.on_key
     }
 }
 
-impl<'a, Message> From<List<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: List<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[derive(Debug, Default)]
-pub struct ListState {
-    base: ratatui_widgets::list::ListState,
+pub struct TableState {
+    base: ratatui_widgets::table::TableState,
     pub area: Area,
+    pub pos_vertical: ScrollPosition,
 }
 
-impl Deref for ListState {
-    type Target = ratatui_widgets::list::ListState;
+impl Deref for TableState {
+    type Target = ratatui_widgets::table::TableState;
 
     fn deref(&self) -> &Self::Target {
         &self.base
     }
 }
 
-impl DerefMut for ListState {
+impl DerefMut for TableState {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.base
     }
 }
 
-impl ListState {
+impl TableState {
     pub fn reset(&mut self) {
         self.base.select(Some(0));
     }
 
-    /// Assume each [`ListItem`] height is 1, scroll vertically through the lines.
+    /// Assume each [`Row`] height is 1, scroll vertically through the lines.
     pub fn scroll_lines(&mut self, action: ScrollAction, height: usize) {
         let selected_offset = match action {
             ScrollAction::Fixed(n) => n,

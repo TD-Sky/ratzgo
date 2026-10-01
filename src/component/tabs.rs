@@ -1,6 +1,6 @@
 use std::{cell::Cell, rc::Rc};
 
-use ratatui_core::{buffer::Buffer, layout::Rect, text::Line, widgets::Widget as _};
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
 use ratatui_crossterm::crossterm::event::KeyEvent;
 
 use crate::core::*;
@@ -28,6 +28,11 @@ impl<'a, Message> Tabs<'a, Message> {
         self
     }
 
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+
     pub fn decorate<F>(mut self, f: F) -> Self
     where
         F: FnOnce(ratatui_widgets::tabs::Tabs<'a>) -> ratatui_widgets::tabs::Tabs<'a>,
@@ -37,7 +42,7 @@ impl<'a, Message> Tabs<'a, Message> {
     }
 }
 
-impl<'a, Message> Widget<Message> for Tabs<'a, Message>
+impl<'a, Message> Component<Message> for Tabs<'a, Message>
 where
     Message: std::fmt::Debug,
 {
@@ -81,19 +86,10 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Tabs<'a, Message> {
     }
 }
 
-impl<'a, Message> From<Tabs<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Tabs<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
 #[macro_export]
 macro_rules! tabs {
     ($($title:expr),+ $(,)?) => {
-        $crate::widget::Tabs::new(
+        $crate::component::Tabs::new(
             [$($crate::text::Line::from($title)),+],
         )
     };

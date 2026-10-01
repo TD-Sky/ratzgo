@@ -10,35 +10,26 @@ pub struct Stack<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Element<'a, Message>>,
-}
-
-impl<'a, Message> From<Stack<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Stack<'a, Message>) -> Self {
-        Element::new(widget)
-    }
+    components: Vec<Box<dyn Component<Message> + 'a>>,
 }
 
 impl<'a, Message> Stack<'a, Message> {
-    pub fn new(elts: impl IntoIterator<Item = Element<'a, Message>>) -> Self {
+    pub fn new(components: impl IntoIterator<Item = Box<dyn Component<Message> + 'a>>) -> Self {
         Self {
             area: Default::default(),
             activity: false,
             on_key: Default::default(),
-            elts: elts.into_iter().collect(),
+            components: components.into_iter().collect(),
         }
     }
 }
 
-impl<'a, Message> Widget<Message> for Stack<'a, Message>
+impl<'a, Message> Component<Message> for Stack<'a, Message>
 where
     Message: std::fmt::Debug,
 {
     fn activity(&self) -> bool {
-        self.activity || self.elts.iter().any(|v| v.as_widget().activity())
+        self.activity || self.components.iter().any(|v| v.activity())
     }
 
     fn area(&self) -> Rect {
@@ -50,33 +41,27 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
             .rev()
-            .find_map(|v| {
-                let v = v.as_widget_mut();
-                v.activity().then_some(v)
-            })
+            .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_key(key))
             .or_else(|| self.on_key.key(key))
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
             .rev()
-            .find_map(|v| {
-                let v = v.as_widget_mut();
-                v.activity().then_some(v)
-            })
+            .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_paste(content))
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
         let area = self.area.get();
 
-        for elt in &mut self.elts {
-            elt.as_widget_mut().render(area, buf);
+        for cpt in &mut self.components {
+            cpt.render(area, buf);
         }
     }
 }
@@ -102,10 +87,8 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Stack<'a, Message> {
 
 #[macro_export]
 macro_rules! stack {
-    ($($widget:expr),+ $(,)?) => {
-        $crate::widget::Stack::new(
-            [$(::std::convert::Into::<$crate::core::Element<_>>::into($widget)),+],
-        )
+    ($($cpt:expr),+ $(,)?) => {
+        $crate::component::Stack::new([$($crate::core::ComponentExt::boxed($cpt)),+])
     };
 }
 pub use stack;

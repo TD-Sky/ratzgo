@@ -3,29 +3,32 @@ use std::{any, cell::Cell, rc::Rc};
 use ratatui_core::{
     buffer::Buffer,
     layout::{Position, Rect},
+    style::Style,
     text::Line,
-    widgets::Widget as _,
+    widgets::Widget,
 };
 use ratatui_crossterm::crossterm::event::KeyEvent;
 pub use ratatui_widgets::borders::{BorderType, Borders};
 
 use crate::core::*;
 
-pub fn block<'a, Message>(widget: impl Into<Element<'a, Message>>) -> Block<'a, Message> {
+pub fn block<'a, Message, W>(inner: W) -> Block<'a, Message, W> {
     Block {
         base: ratatui_widgets::block::Block::new(),
         area: Default::default(),
-        inner: widget.into(),
-        widgets: vec![],
+        inner,
+        components: vec![],
+        on_key: Default::default(),
     }
 }
 
 #[derive(Debug)]
-pub struct Block<'a, Message> {
+pub struct Block<'a, Message, W = Box<dyn Component<Message> + 'a>> {
     base: ratatui_widgets::block::Block<'a>,
     area: Area,
-    inner: Element<'a, Message>,
-    widgets: Vec<WidgetOnBlock<'a, Message>>,
+    inner: W,
+    components: Vec<Decoration<'a, Message>>,
+    on_key: OnKey<'a, Message>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,7 +39,7 @@ pub enum BorderOrientation {
     Right,
 }
 
-impl<'a, Message> Block<'a, Message> {
+impl<'a, Message, W> Block<'a, Message, W> {
     pub fn title(mut self, title: impl Into<Line<'a>>) -> Self {
         self.base = self.base.title(title);
         self
@@ -62,6 +65,11 @@ impl<'a, Message> Block<'a, Message> {
         self
     }
 
+    pub fn style(mut self, style: impl Into<Style>) -> Self {
+        self.base = self.base.style(style);
+        self
+    }
+
     pub fn decorate<F>(mut self, f: F) -> Self
     where
         F: FnOnce(ratatui_widgets::block::Block<'a>) -> ratatui_widgets::block::Block<'a>,
@@ -70,100 +78,101 @@ impl<'a, Message> Block<'a, Message> {
         self
     }
 
-    pub fn widget_top(
+    pub fn top_component(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_top_opt(widget, move |v| Some(pos(v)))
+        self.top_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_bottom(
+    pub fn bottom_component(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_bottom_opt(widget, move |v| Some(pos(v)))
+        self.bottom_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_left(
+    pub fn left_component(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_left_opt(widget, move |v| Some(pos(v)))
+        self.left_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_right(
+    pub fn right_component(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_right_opt(widget, move |v| Some(pos(v)))
+        self.right_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_top_opt(
+    pub fn top_component_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Top,
             pos: Box::new(pos),
         })
     }
 
-    pub fn widget_bottom_opt(
+    pub fn bottom_component_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Bottom,
             pos: Box::new(pos),
         })
     }
 
-    pub fn widget_left_opt(
+    pub fn left_component_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Left,
             pos: Box::new(pos),
         })
     }
 
-    pub fn widget_right_opt(
+    pub fn right_component_opt(
         self,
-        widget: impl Into<Element<'a, Message>>,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.into(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Right,
             pos: Box::new(pos),
         })
     }
 }
 
-impl<'a, Message> Block<'a, Message> {
-    fn add_widget(mut self, widget: WidgetOnBlock<'a, Message>) -> Self {
-        self.widgets.push(widget);
+impl<'a, Message, W> Block<'a, Message, W> {
+    fn add_component(mut self, cpt: Decoration<'a, Message>) -> Self {
+        self.components.push(cpt);
         self
     }
 }
 
-impl<'a, Message> Widget<Message> for Block<'a, Message>
+impl<'a, Message, W> Component<Message> for Block<'a, Message, W>
 where
     Message: std::fmt::Debug,
+    W: Component<Message>,
 {
     fn activity(&self) -> bool {
-        self.inner.as_widget().activity()
+        self.inner.activity()
     }
 
     fn area(&self) -> Rect {
@@ -175,26 +184,26 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.inner.as_widget_mut().handle_key(key)
+        self.inner.handle_key(key).or_else(|| self.on_key.key(key))
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner.as_widget_mut().handle_click(pos)
+        self.inner.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.inner.as_widget_mut().handle_paste(content)
+        self.inner.handle_paste(content)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
         let area = self.area.get();
 
         let inner_area = self.base.inner(area);
-        self.inner.as_widget_mut().render(inner_area, buf);
+        self.inner.render(inner_area, buf);
         (&self.base).render(area, buf);
 
-        self.widgets.retain_mut(|widget| {
-            let border = match widget.orientation {
+        self.components.retain_mut(|cpt| {
+            let border = match cpt.orientation {
                 BorderOrientation::Top => area.rows().next(),
                 BorderOrientation::Bottom => area.rows().next_back(),
                 BorderOrientation::Left => area.columns().next(),
@@ -204,42 +213,42 @@ where
                 return false;
             };
 
-            let Some(pos_area) = (widget.pos)(border_area) else {
+            let Some(pos_area) = (cpt.pos)(border_area) else {
                 return false;
             };
 
-            widget.base.as_widget_mut().render(pos_area, buf);
+            cpt.base.render(pos_area, buf);
 
             true
         });
     }
 }
 
-impl<'a, Message> From<Block<'a, Message>> for Element<'a, Message>
-where
-    Message: std::fmt::Debug + 'a,
-{
-    fn from(widget: Block<'a, Message>) -> Self {
-        Self::new(widget)
-    }
-}
-
-impl<'a, Message> BindArea for Block<'a, Message> {
+impl<'a, Message, W> BindArea for Block<'a, Message, W> {
     fn bind_area(mut self, area: &Rc<Cell<Rect>>) -> Self {
         self.area = Area::Ref(area.clone());
         self
     }
 }
 
-struct WidgetOnBlock<'a, Message> {
-    base: Element<'a, Message>,
+impl<'a, Message> OnKeyBuilder<'a, Message> for Block<'a, Message> {
+    fn on_key_mut(&mut self) -> &mut OnKey<'a, Message> {
+        &mut self.on_key
+    }
+}
+
+struct Decoration<'a, Message> {
+    base: Box<dyn Component<Message> + 'a>,
     orientation: BorderOrientation,
     pos: Box<dyn FnMut(Rect) -> Option<Rect> + 'a>,
 }
 
-impl<'a, Message: std::fmt::Debug> std::fmt::Debug for WidgetOnBlock<'a, Message> {
+impl<'a, Message> std::fmt::Debug for Decoration<'a, Message>
+where
+    Message: std::fmt::Debug,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WidgetOnBlock")
+        f.debug_struct("Decoration")
             .field("base", &self.base)
             .field("orientation", &self.orientation)
             .field(
