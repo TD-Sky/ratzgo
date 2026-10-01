@@ -10,16 +10,16 @@ pub struct Stack<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Box<dyn Component<Message> + 'a>>,
+    components: Vec<Box<dyn Component<Message> + 'a>>,
 }
 
 impl<'a, Message> Stack<'a, Message> {
-    pub fn new(elts: impl IntoIterator<Item = Box<dyn Component<Message> + 'a>>) -> Self {
+    pub fn new(components: impl IntoIterator<Item = Box<dyn Component<Message> + 'a>>) -> Self {
         Self {
             area: Default::default(),
             activity: false,
             on_key: Default::default(),
-            elts: elts.into_iter().collect(),
+            components: components.into_iter().collect(),
         }
     }
 }
@@ -29,7 +29,7 @@ where
     Message: std::fmt::Debug,
 {
     fn activity(&self) -> bool {
-        self.activity || self.elts.iter().any(|v| v.activity())
+        self.activity || self.components.iter().any(|v| v.activity())
     }
 
     fn area(&self) -> Rect {
@@ -41,7 +41,7 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
             .rev()
             .find_map(|v| v.activity().then_some(v))
@@ -50,7 +50,7 @@ where
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
             .rev()
             .find_map(|v| v.activity().then_some(v))
@@ -60,8 +60,8 @@ where
     fn adapt(&mut self, buf: &mut Buffer) {
         let area = self.area.get();
 
-        for elt in &mut self.elts {
-            elt.render(area, buf);
+        for cpt in &mut self.components {
+            cpt.render(area, buf);
         }
     }
 }
@@ -87,8 +87,8 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Stack<'a, Message> {
 
 #[macro_export]
 macro_rules! stack {
-    ($($widget:expr),+ $(,)?) => {
-        $crate::component::Stack::new([$($crate::core::ComponentExt::boxed($widget)),+])
+    ($($cpt:expr),+ $(,)?) => {
+        $crate::component::Stack::new([$($crate::core::ComponentExt::boxed($cpt)),+])
     };
 }
 pub use stack;

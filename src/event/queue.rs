@@ -37,9 +37,9 @@ struct Inner<Message> {
 }
 
 impl<Message> UnsyncQueue<Message> {
-    pub fn push(&self, elt: impl Into<Message>) {
+    pub fn push(&self, cpt: impl Into<Message>) {
         let mut inner = self.inner.borrow();
-        inner.base.push_front(elt.into());
+        inner.base.push_front(cpt.into());
         if let Some(waker) = inner.waker.take() {
             waker.wake();
         }
@@ -102,8 +102,8 @@ impl<Message> Future for UnsyncQueuePop<'_, Message> {
     type Output = Message;
 
     fn poll(self: Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
-        if let Some(elt) = self.queue.inner.borrow().base.pop_back() {
-            return Poll::Ready(elt);
+        if let Some(cpt) = self.queue.inner.borrow().base.pop_back() {
+            return Poll::Ready(cpt);
         }
 
         self.queue.inner.borrow().waker = Some(cx.waker().clone());

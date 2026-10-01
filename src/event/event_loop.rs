@@ -58,9 +58,9 @@ where
         return Ok(());
     }
 
-    let mut elt = view(state.as_mut());
+    let mut cpt = view(state.as_mut());
     terminal.draw(|frame| {
-        elt.render(frame.area(), frame.buffer_mut());
+        cpt.render(frame.area(), frame.buffer_mut());
     })?;
 
     loop {
@@ -68,18 +68,18 @@ where
             (event, _) = (&mut event_stream).into_future() => {
                 match event {
                     Some(Ok(Event::Resize(..))) => {
-                        drop(elt);
+                        drop(cpt);
                     }
                     Some(Ok(event)) => {
-                        let msg = handle_terminal_event(event, elt.as_mut());
-                        drop(elt);
+                        let msg = handle_terminal_event(event, cpt.as_mut());
+                        drop(cpt);
                         match msg {
                             Some(msg) => {
                                 ctx.queue.push(msg);
                             }
                             None => {
                                 // NOTE: Refresh event callback
-                                elt = view(state.as_mut());
+                                cpt = view(state.as_mut());
                                 continue;
                             }
                         }
@@ -90,7 +90,7 @@ where
             }
 
             msg = ctx.queue.pop().fuse() => {
-                drop(elt);
+                drop(cpt);
                 update(state.as_mut(), msg, &mut ctx).await;
 
                 if ctx.exit {
@@ -100,7 +100,7 @@ where
 
             msg = ctx.select.next().fuse() => {
                 let msg = msg.expect("always get `Some` if ready");
-                drop(elt);
+                drop(cpt);
                 update(state.as_mut(), msg, &mut ctx).await;
 
                 if ctx.exit {
@@ -125,9 +125,9 @@ where
             }
         }
 
-        elt = view(state.as_mut());
+        cpt = view(state.as_mut());
         terminal.draw(|frame| {
-            elt.render(frame.area(), frame.buffer_mut());
+            cpt.render(frame.area(), frame.buffer_mut());
         })?;
     }
 

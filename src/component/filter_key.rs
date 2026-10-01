@@ -9,15 +9,15 @@ use ratatui_crossterm::crossterm::event::KeyEvent;
 use crate::core::Component;
 
 pub struct FilterKey<'a, Message, W> {
-    widget: W,
+    component: W,
     filter: Box<dyn Fn(&KeyEvent) -> bool + 'a>,
     _marker: PhantomData<Message>,
 }
 
 impl<'a, Message, W> FilterKey<'a, Message, W> {
-    pub fn new(widget: W, filter: impl Fn(&KeyEvent) -> bool + 'a) -> Self {
+    pub fn new(component: W, filter: impl Fn(&KeyEvent) -> bool + 'a) -> Self {
         Self {
-            widget,
+            component,
             filter: Box::new(filter),
             _marker: PhantomData,
         }
@@ -30,11 +30,12 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FilterKey")
-            .field("widget", &self.widget)
+            .field("component", &self.component)
             .field(
                 "filter",
                 &format_args!("<closure of `{}`>", any::type_name_of_val(&self.filter)),
             )
+            .field("_marker", &self._marker)
             .finish()
     }
 }
@@ -44,34 +45,34 @@ where
     W: Component<Message>,
 {
     fn activity(&self) -> bool {
-        self.widget.activity()
+        self.component.activity()
     }
 
     fn area(&self) -> Rect {
-        self.widget.area()
+        self.component.area()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.widget.set_area(area);
+        self.component.set_area(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
         if (self.filter)(key) {
-            self.widget.handle_key(key)
+            self.component.handle_key(key)
         } else {
             None
         }
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.widget.handle_click(pos)
+        self.component.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.widget.handle_paste(content)
+        self.component.handle_paste(content)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        self.widget.adapt(buf);
+        self.component.adapt(buf);
     }
 }

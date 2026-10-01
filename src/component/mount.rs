@@ -33,11 +33,11 @@ impl<Message> MountPoint<Message> {
 
     pub fn mount<'a>(
         &self,
-        widget: impl Component<Message> + 'a,
+        component: impl Component<Message> + 'a,
         constraint: impl FnOnce(Rect) -> Rect + 'a,
     ) {
         let inner = Inner {
-            elt: widget.boxed(),
+            component: component.boxed(),
             constraint: Some(Box::new(constraint)),
         };
         let inner: Inner<'static, Message> = unsafe { mem::transmute(inner) };
@@ -85,15 +85,19 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.inner.borrow().as_mut()?.elt.handle_key(key)
+        self.inner.borrow().as_mut()?.component.handle_key(key)
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner.borrow().as_mut()?.elt.handle_click(pos)
+        self.inner.borrow().as_mut()?.component.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.inner.borrow().as_mut()?.elt.handle_paste(content)
+        self.inner
+            .borrow()
+            .as_mut()?
+            .component
+            .handle_paste(content)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
@@ -104,7 +108,7 @@ where
                 .expect("`constraint` must be `Some`"))(self.area.get());
 
             Clear.render(area, buf);
-            inner.elt.render(area, buf);
+            inner.component.render(area, buf);
         }
     }
 }
@@ -117,7 +121,7 @@ impl<'a, Message> BindArea for MountView<'a, Message> {
 }
 
 struct Inner<'a, Message> {
-    elt: Box<dyn Component<Message> + 'a>,
+    component: Box<dyn Component<Message> + 'a>,
     constraint: Option<Box<dyn FnOnce(Rect) -> Rect + 'a>>,
 }
 
@@ -127,7 +131,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Inner")
-            .field("elt", &self.elt)
+            .field("component", &self.component)
             .field(
                 "constraint",
                 &format_args!("<closure of `{}`>", any::type_name_of_val(&self.constraint)),

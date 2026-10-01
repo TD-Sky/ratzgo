@@ -9,14 +9,14 @@ use ratatui_crossterm::crossterm::event::KeyEvent;
 use crate::core::Component;
 
 pub struct MapMessage<'a, Message, O, W> {
-    widget: W,
+    component: W,
     mapper: Box<dyn Fn(Message) -> O + 'a>,
 }
 
 impl<'a, Message, O, W> MapMessage<'a, Message, O, W> {
-    pub fn new(widget: W, mapper: impl Fn(Message) -> O + 'a) -> Self {
+    pub fn new(component: W, mapper: impl Fn(Message) -> O + 'a) -> Self {
         Self {
-            widget,
+            component,
             mapper: Box::new(mapper),
         }
     }
@@ -28,7 +28,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MapMessage")
-            .field("widget", &self.widget)
+            .field("component", &self.component)
             .field(
                 "mapper",
                 &format_args!("<closure of `{}`>", any::type_name_of_val(&self.mapper)),
@@ -44,30 +44,30 @@ where
     W: Component<Message>,
 {
     fn activity(&self) -> bool {
-        self.widget.activity()
+        self.component.activity()
     }
 
     fn area(&self) -> Rect {
-        self.widget.area()
+        self.component.area()
     }
 
     fn set_area(&mut self, area: Rect) {
-        self.widget.set_area(area);
+        self.component.set_area(area);
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<O> {
-        self.widget.handle_key(key).map(&self.mapper)
+        self.component.handle_key(key).map(&self.mapper)
     }
 
     fn handle_click(&mut self, pos: Position) -> Option<O> {
-        self.widget.handle_click(pos).map(&self.mapper)
+        self.component.handle_click(pos).map(&self.mapper)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<O> {
-        self.widget.handle_paste(content).map(&self.mapper)
+        self.component.handle_paste(content).map(&self.mapper)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        self.widget.adapt(buf);
+        self.component.adapt(buf);
     }
 }

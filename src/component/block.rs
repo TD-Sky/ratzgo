@@ -12,12 +12,12 @@ pub use ratatui_widgets::borders::{BorderType, Borders};
 
 use crate::core::*;
 
-pub fn block<'a, Message, W>(widget: W) -> Block<'a, Message, W> {
+pub fn block<'a, Message, W>(inner: W) -> Block<'a, Message, W> {
     Block {
         base: ratatui_widgets::block::Block::new(),
         area: Default::default(),
-        inner: widget,
-        widgets: vec![],
+        inner,
+        components: vec![],
         on_key: Default::default(),
     }
 }
@@ -27,7 +27,7 @@ pub struct Block<'a, Message, W = Box<dyn Component<Message> + 'a>> {
     base: ratatui_widgets::block::Block<'a>,
     area: Area,
     inner: W,
-    widgets: Vec<WidgetOnBlock<'a, Message>>,
+    components: Vec<Decoration<'a, Message>>,
     on_key: OnKey<'a, Message>,
 }
 
@@ -78,81 +78,81 @@ impl<'a, Message, W> Block<'a, Message, W> {
         self
     }
 
-    pub fn widget_top(
+    pub fn top_component(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_top_opt(widget, move |v| Some(pos(v)))
+        self.top_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_bottom(
+    pub fn bottom_component(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_bottom_opt(widget, move |v| Some(pos(v)))
+        self.bottom_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_left(
+    pub fn left_component(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_left_opt(widget, move |v| Some(pos(v)))
+        self.left_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_right(
+    pub fn right_component(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         mut pos: impl FnMut(Rect) -> Rect + 'a,
     ) -> Self {
-        self.widget_right_opt(widget, move |v| Some(pos(v)))
+        self.right_component_opt(cpt, move |v| Some(pos(v)))
     }
 
-    pub fn widget_top_opt(
+    pub fn top_component_opt(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.boxed(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Top,
             pos: Box::new(pos),
         })
     }
 
-    pub fn widget_bottom_opt(
+    pub fn bottom_component_opt(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.boxed(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Bottom,
             pos: Box::new(pos),
         })
     }
 
-    pub fn widget_left_opt(
+    pub fn left_component_opt(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.boxed(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Left,
             pos: Box::new(pos),
         })
     }
 
-    pub fn widget_right_opt(
+    pub fn right_component_opt(
         self,
-        widget: impl Component<Message> + 'a,
+        cpt: impl Component<Message> + 'a,
         pos: impl FnMut(Rect) -> Option<Rect> + 'a,
     ) -> Self {
-        self.add_widget(WidgetOnBlock {
-            base: widget.boxed(),
+        self.add_component(Decoration {
+            base: cpt.boxed(),
             orientation: BorderOrientation::Right,
             pos: Box::new(pos),
         })
@@ -160,8 +160,8 @@ impl<'a, Message, W> Block<'a, Message, W> {
 }
 
 impl<'a, Message, W> Block<'a, Message, W> {
-    fn add_widget(mut self, widget: WidgetOnBlock<'a, Message>) -> Self {
-        self.widgets.push(widget);
+    fn add_component(mut self, cpt: Decoration<'a, Message>) -> Self {
+        self.components.push(cpt);
         self
     }
 }
@@ -202,8 +202,8 @@ where
         self.inner.render(inner_area, buf);
         (&self.base).render(area, buf);
 
-        self.widgets.retain_mut(|widget| {
-            let border = match widget.orientation {
+        self.components.retain_mut(|cpt| {
+            let border = match cpt.orientation {
                 BorderOrientation::Top => area.rows().next(),
                 BorderOrientation::Bottom => area.rows().next_back(),
                 BorderOrientation::Left => area.columns().next(),
@@ -213,11 +213,11 @@ where
                 return false;
             };
 
-            let Some(pos_area) = (widget.pos)(border_area) else {
+            let Some(pos_area) = (cpt.pos)(border_area) else {
                 return false;
             };
 
-            widget.base.render(pos_area, buf);
+            cpt.base.render(pos_area, buf);
 
             true
         });
@@ -237,18 +237,18 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Block<'a, Message> {
     }
 }
 
-struct WidgetOnBlock<'a, Message> {
+struct Decoration<'a, Message> {
     base: Box<dyn Component<Message> + 'a>,
     orientation: BorderOrientation,
     pos: Box<dyn FnMut(Rect) -> Option<Rect> + 'a>,
 }
 
-impl<'a, Message> std::fmt::Debug for WidgetOnBlock<'a, Message>
+impl<'a, Message> std::fmt::Debug for Decoration<'a, Message>
 where
     Message: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WidgetOnBlock")
+        f.debug_struct("Decoration")
             .field("base", &self.base)
             .field("orientation", &self.orientation)
             .field(

@@ -14,24 +14,24 @@ pub struct Layout<'a, Message> {
     area: Area,
     activity: bool,
     on_key: OnKey<'a, Message>,
-    elts: Vec<Box<dyn Component<Message> + 'a>>,
+    components: Vec<Box<dyn Component<Message> + 'a>>,
 }
 
 impl<'a, Message> Layout<'a, Message> {
-    pub fn vertical<C, W>(constraints: C, widgets: W) -> Self
+    pub fn vertical<C, W>(constraints: C, components: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
         W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
-        Self::new(Direction::Vertical, constraints, widgets)
+        Self::new(Direction::Vertical, constraints, components)
     }
 
-    pub fn horizontal<C, W>(constraints: C, widgets: W) -> Self
+    pub fn horizontal<C, W>(constraints: C, components: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
         W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
-        Self::new(Direction::Horizontal, constraints, widgets)
+        Self::new(Direction::Horizontal, constraints, components)
     }
 
     pub fn decorate<F>(mut self, f: F) -> Self
@@ -44,22 +44,22 @@ impl<'a, Message> Layout<'a, Message> {
 }
 
 impl<'a, Message> Layout<'a, Message> {
-    fn new<C, W>(direction: Direction, constraints: C, widgets: W) -> Self
+    fn new<C, W>(direction: Direction, constraints: C, components: W) -> Self
     where
         C: IntoIterator<Item: Into<Constraint>>,
         W: IntoIterator<Item = Box<dyn Component<Message> + 'a>>,
     {
         let constraints: Vec<_> = constraints.into_iter().collect();
-        let elts: Vec<_> = widgets.into_iter().collect();
+        let components: Vec<_> = components.into_iter().collect();
 
-        debug_assert_eq!(constraints.len(), elts.len());
+        debug_assert_eq!(constraints.len(), components.len());
 
         Self {
             area: Default::default(),
             activity: false,
             on_key: OnKey::default(),
             base: ratatui_core::layout::Layout::new(direction, constraints),
-            elts,
+            components,
         }
     }
 }
@@ -69,7 +69,7 @@ where
     Message: std::fmt::Debug,
 {
     fn activity(&self) -> bool {
-        self.activity || self.elts.iter().any(|v| v.activity())
+        self.activity || self.components.iter().any(|v| v.activity())
     }
 
     fn area(&self) -> Rect {
@@ -81,7 +81,7 @@ where
     }
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
             .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_key(key))
@@ -91,23 +91,27 @@ where
     fn handle_click(&mut self, pos: Position) -> Option<Message> {
         // TODO: click which part
 
-        let widget = self
-            .elts
+        let cpt = self
+            .components
             .iter_mut()
             .find_map(|v| v.area().contains(pos).then_some(v))?;
-        widget.handle_click(pos)
+        cpt.handle_click(pos)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
-        self.elts
+        self.components
             .iter_mut()
             .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_paste(content))
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {
-        for (elt, &area) in self.elts.iter_mut().zip(&*self.base.split(self.area.get())) {
-            elt.render(area, buf);
+        for (cpt, &area) in self
+            .components
+            .iter_mut()
+            .zip(&*self.base.split(self.area.get()))
+        {
+            cpt.render(area, buf);
         }
     }
 }
@@ -133,10 +137,10 @@ impl<'a, Message> OnKeyBuilder<'a, Message> for Layout<'a, Message> {
 
 #[macro_export]
 macro_rules! column {
-    ($constraints:expr; [$($widget:expr),+ $(,)?]) => {
+    ($constraints:expr; [$($cpt:expr),+ $(,)?]) => {
         $crate::component::Layout::vertical(
             $constraints,
-            [$($crate::core::ComponentExt::boxed($widget)),+],
+            [$($crate::core::ComponentExt::boxed($cpt)),+],
         )
     };
 }
@@ -144,10 +148,10 @@ pub use column;
 
 #[macro_export]
 macro_rules! row {
-    ($constraints:expr; [$($widget:expr),+ $(,)?]) => {
+    ($constraints:expr; [$($cpt:expr),+ $(,)?]) => {
         $crate::component::Layout::horizontal(
             $constraints,
-            [$($crate::core::ComponentExt::boxed($widget)),+],
+            [$($crate::core::ComponentExt::boxed($cpt)),+],
         )
     };
 }
