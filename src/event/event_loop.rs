@@ -1,5 +1,6 @@
 use std::{
     io::{self, Stdout, stdout},
+    mem::DropGuard,
     panic,
     time::Duration,
 };
@@ -25,7 +26,6 @@ use ratatui_crossterm::{
 use crate::{
     core::Component,
     event::{SelectEventSource, UnsyncDebounce, UnsyncQueue, YieldFg},
-    utils::mem::DropGuard,
 };
 
 pub async fn default_event_loop<S, State, Init, Message, Update, View>(

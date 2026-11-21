@@ -17,9 +17,6 @@ include = [
   "README.md",
 ]
 
-[package.metadata.cargo-shear]
-ignored = ["crossterm"]
-
 [dependencies]
 ratatui-core = "0.1"
 ratatui-crossterm = "0.1"

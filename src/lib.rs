@@ -72,5 +72,4 @@ pub mod scroll {
 }
 mod utils {
     pub mod future;
-    pub mod mem;
 }
