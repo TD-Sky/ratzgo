@@ -37,15 +37,15 @@ pub async fn default_event_loop<S, State, Init, Message, Update, View>(
 where
     S: AsRef<State> + AsMut<State>,
     Message: std::fmt::Debug,
-    Init: AsyncFnOnce(&mut State, &mut DefaultContext<Message, State>),
-    Update: AsyncFnMut(&mut State, Message, &mut DefaultContext<Message, State>),
+    Init: AsyncFnOnce(&mut State, &mut RuntimeContext<Message, State>),
+    Update: AsyncFnMut(&mut State, Message, &mut RuntimeContext<Message, State>),
     View: for<'a> Fn(&'a mut State) -> Box<dyn Component<Message> + 'a>,
 {
     let _restore = DropGuard::new((), |_| try_restore().expect("try restoring terminal"));
 
     let mut terminal = try_init()?;
     let mut event_stream = EventStream::new();
-    let mut ctx = DefaultContext {
+    let mut ctx = RuntimeContext {
         queue: UnsyncQueue::default(),
         select: SelectEventSource::default(),
         yield_fg: None,
@@ -188,14 +188,14 @@ fn handle_terminal_event<Message>(
 }
 
 #[derive(Debug)]
-pub struct DefaultContext<Message, State> {
+pub struct RuntimeContext<Message, State> {
     queue: UnsyncQueue<Message>,
     select: SelectEventSource<Message>,
     yield_fg: Option<YieldFg<Message, State, Self>>,
     exit: bool,
 }
 
-impl<Message, State> DefaultContext<Message, State> {
+impl<Message, State> RuntimeContext<Message, State> {
     pub fn queue(&self) -> &UnsyncQueue<Message> {
         &self.queue
     }
