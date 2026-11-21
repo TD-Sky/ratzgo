@@ -1,0 +1,48 @@
+[files]
+extend-exclude = []
+ignore-hidden = true
+ignore-files = true
+ignore-dot = true
+ignore-vcs = true
+ignore-global = true
+ignore-parent = true
+
+[default]
+binary = false
+check-filename = true
+check-file = true
+unicode = true
+ignore-hex = true
+identifier-leading-digits = false
+locale = "en"
+extend-ignore-identifiers-re = []
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[default.extend-identifiers]
+
+[default.extend-words]
+
+[type.rust]
+extend-glob = []
+extend-ignore-identifiers-re = ["ratatui_.+"]
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[type.rust.extend-identifiers]
+ratatui = "ratatui"
+flate2 = "flate2"
+
+[type.rust.extend-words]
+ser = "ser"
+
+[type.lock]
+extend-glob = []
+check-file = false
+extend-ignore-identifiers-re = []
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[type.lock.extend-identifiers]
+
+[type.lock.extend-words]

@@ -47,7 +47,7 @@ where
     Message: std::fmt::Debug,
 {
     fn activity(&self) -> bool {
-        false
+        self.activity
     }
 
     fn area(&self) -> Rect {
