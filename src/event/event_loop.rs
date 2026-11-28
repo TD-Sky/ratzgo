@@ -1,22 +1,16 @@
 use std::{
     io::{self, Stdout, stdout},
+    mem::DropGuard,
     panic,
     time::Duration,
 };
 
 use futures_util::{FutureExt, StreamExt, select};
-use ratatui_core::{
-    backend::Backend,
-    layout::{Position, Rect},
-    terminal::Terminal,
-};
+use ratatui_core::{backend::Backend, layout::Rect, terminal::Terminal};
 use ratatui_crossterm::{
     CrosstermBackend,
     crossterm::{
-        event::{
-            DisableMouseCapture, EnableMouseCapture, Event, EventStream, MouseButton,
-            MouseEventKind,
-        },
+        event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream},
         execute,
         terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
     },
@@ -25,7 +19,6 @@ use ratatui_crossterm::{
 use crate::{
     core::Component,
     event::{SelectEventSource, UnsyncDebounce, UnsyncQueue, YieldFg},
-    utils::mem::DropGuard,
 };
 
 pub async fn default_event_loop<S, State, Init, Message, Update, View>(
@@ -37,15 +30,15 @@ pub async fn default_event_loop<S, State, Init, Message, Update, View>(
 where
     S: AsRef<State> + AsMut<State>,
     Message: std::fmt::Debug,
-    Init: AsyncFnOnce(&mut State, &mut DefaultContext<Message, State>),
-    Update: AsyncFnMut(&mut State, Message, &mut DefaultContext<Message, State>),
+    Init: AsyncFnOnce(&mut State, &mut RuntimeContext<Message, State>),
+    Update: AsyncFnMut(&mut State, Message, &mut RuntimeContext<Message, State>),
     View: for<'a> Fn(&'a mut State) -> Box<dyn Component<Message> + 'a>,
 {
     let _restore = DropGuard::new((), |_| try_restore().expect("try restoring terminal"));
 
     let mut terminal = try_init()?;
     let mut event_stream = EventStream::new();
-    let mut ctx = DefaultContext {
+    let mut ctx = RuntimeContext {
         queue: UnsyncQueue::default(),
         select: SelectEventSource::default(),
         yield_fg: None,
@@ -71,18 +64,20 @@ where
                         drop(cpt);
                     }
                     Some(Ok(event)) => {
-                        let msg = handle_terminal_event(event, cpt.as_mut());
-                        drop(cpt);
-                        match msg {
-                            Some(msg) => {
-                                ctx.queue.push(msg);
-                            }
-                            None => {
-                                // NOTE: Refresh event callback
-                                cpt = view(state.as_mut());
-                                continue;
-                            }
+                        let (msg, rebuild) = handle_terminal_event(event, cpt.as_mut());
+
+                        if let Some(msg) = msg {
+                            ctx.queue.push(msg);
                         }
+
+                        // NOTE: Keep the drawn tree: rebuilding it here would leave
+                        //       every area at `Rect::ZERO` until some message forces
+                        //       the redraw at the bottom of the loop.
+                        if !rebuild {
+                            continue;
+                        }
+
+                        drop(cpt);
                     },
                     Some(Err(_)) => continue,
                     None => break,
@@ -169,33 +164,37 @@ where
     terminal.resize(area)
 }
 
+/// Dispatches a terminal event, reporting whether the view must be rebuilt.
+///
+/// `rebuild` is `false` when the event can be handed to the current tree without
+/// invalidating it: handlers that are reusable (`FnMut`) and events with no
+/// handler at all. The caller must keep that tree, because a rebuilt tree has not
+/// been drawn yet and therefore still reports `Rect::ZERO` for every area.
 fn handle_terminal_event<Message>(
     event: Event,
     root: &mut dyn Component<Message>,
-) -> Option<Message> {
+) -> (Option<Message>, bool) {
     match event {
-        Event::Key(event) => root.handle_key(&event),
-        Event::Mouse(event) => match event.kind {
-            MouseEventKind::Down(MouseButton::Left) => {
-                let pos = Position::new(event.column, event.row);
-                root.handle_click(pos)
-            }
-            _ => None,
-        },
-        Event::Paste(content) => root.handle_paste(&content),
-        _ => None,
+        Event::Key(event) => (root.handle_key(&event), true),
+        Event::Mouse(event) => {
+            let msg = root.handle_mouse(&event);
+            let rebuild = msg.is_some();
+            (msg, rebuild)
+        }
+        Event::Paste(content) => (root.handle_paste(&content), true),
+        _ => (None, false),
     }
 }
 
 #[derive(Debug)]
-pub struct DefaultContext<Message, State> {
+pub struct RuntimeContext<Message, State> {
     queue: UnsyncQueue<Message>,
     select: SelectEventSource<Message>,
     yield_fg: Option<YieldFg<Message, State, Self>>,
     exit: bool,
 }
 
-impl<Message, State> DefaultContext<Message, State> {
+impl<Message, State> RuntimeContext<Message, State> {
     pub fn queue(&self) -> &UnsyncQueue<Message> {
         &self.queue
     }

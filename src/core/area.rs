@@ -46,6 +46,10 @@ impl Area {
             Self::Ref(v) => v.set(area),
         }
     }
+
+    pub fn shared() -> Self {
+        Self::Ref(Default::default())
+    }
 }
 
 pub trait BindArea {

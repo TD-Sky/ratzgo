@@ -1,11 +1,13 @@
-use std::{cell::Cell, mem, rc::Rc};
+use std::{any, cell::Cell, mem, rc::Rc};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 use ratatui_widgets::scrollbar::ScrollbarState;
 pub use ratatui_widgets::scrollbar::{ScrollDirection, ScrollbarOrientation};
 
 use crate::{core::*, scroll::ScrollPosition};
+
+type OnMouse<'a, Message> = Box<dyn FnMut(&MouseEvent) -> Option<Message> + 'a>;
 
 #[derive(Debug, Clone)]
 pub struct ScrollbarParams {
@@ -21,16 +23,36 @@ pub fn scrollbar<'a, Message>(params: ScrollbarParams) -> Scrollbar<'a, Message>
         params,
         orientation: Default::default(),
         on_key: Default::default(),
+        on_mouse: None,
     }
 }
 
-#[derive(Debug)]
 pub struct Scrollbar<'a, Message> {
     base: ratatui_widgets::scrollbar::Scrollbar<'a>,
     area: Area,
     params: ScrollbarParams,
     orientation: ScrollbarOrientation,
     on_key: OnKey<'a, Message>,
+    on_mouse: Option<OnMouse<'a, Message>>,
+}
+
+impl<Message> std::fmt::Debug for Scrollbar<'_, Message>
+where
+    Message: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Scrollbar")
+            .field("base", &self.base)
+            .field("area", &self.area)
+            .field("params", &self.params)
+            .field("orientation", &self.orientation)
+            .field("on_key", &self.on_key)
+            .field(
+                "on_mouse",
+                &format_args!("<closure of `{}`>", any::type_name_of_val(&self.on_mouse)),
+            )
+            .finish()
+    }
 }
 
 impl<'a, Message> Scrollbar<'a, Message> {
@@ -54,6 +76,14 @@ impl<'a, Message> Scrollbar<'a, Message> {
         self.base = f(self.base);
         self
     }
+
+    pub fn on_mouse<F>(mut self, f: F) -> Self
+    where
+        F: FnMut(&MouseEvent) -> Option<Message> + 'a,
+    {
+        self.on_mouse = Some(Box::new(f));
+        self
+    }
 }
 
 impl<'a, Message> Component<Message> for Scrollbar<'a, Message>
@@ -74,6 +104,10 @@ where
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
         self.on_key.key(key)
+    }
+
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        self.on_mouse.as_mut()?(mouse)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {

@@ -1,13 +1,15 @@
-use std::{cell::Cell, rc::Rc};
+use std::{any, cell::Cell, rc::Rc};
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Text, widgets::Widget};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 pub use ratatui_widgets::paragraph::Wrap;
 
 use crate::{
     core::*,
     scroll::{ScrollAction, scroll_horizontal, scroll_vertical},
 };
+
+type OnMouse<'a, Message> = Box<dyn FnMut(&MouseEvent, &ParagraphState) -> Option<Message> + 'a>;
 
 pub fn paragraph<'a, Message>(
     text: impl Into<Text<'a>>,
@@ -19,16 +21,32 @@ pub fn paragraph<'a, Message>(
         base: ratatui_widgets::paragraph::Paragraph::new(text),
         activity: false,
         on_key: Default::default(),
+        on_mouse: None,
         state,
     }
 }
 
-#[derive(Debug)]
 pub struct Paragraph<'a, Message> {
     base: ratatui_widgets::paragraph::Paragraph<'a>,
     activity: bool,
     on_key: OnKey<'a, Message>,
+    on_mouse: Option<OnMouse<'a, Message>>,
     state: &'a mut ParagraphState,
+}
+
+impl<'a, Message: std::fmt::Debug> std::fmt::Debug for Paragraph<'a, Message> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Paragraph")
+            .field("base", &self.base)
+            .field("activity", &self.activity)
+            .field("on_key", &self.on_key)
+            .field(
+                "on_mouse",
+                &format_args!("<closure of `{}`>", any::type_name_of_val(&self.on_mouse)),
+            )
+            .field("state", &self.state)
+            .finish()
+    }
 }
 
 impl<'a, Message> Paragraph<'a, Message> {
@@ -51,6 +69,14 @@ impl<'a, Message> Paragraph<'a, Message> {
         self.base = f(self.base);
         self
     }
+
+    pub fn on_mouse<F>(mut self, f: F) -> Self
+    where
+        F: FnMut(&MouseEvent, &ParagraphState) -> Option<Message> + 'a,
+    {
+        self.on_mouse = Some(Box::new(f));
+        self
+    }
 }
 
 impl<'a, Message> Component<Message> for Paragraph<'a, Message>
@@ -71,6 +97,10 @@ where
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
         self.on_key.key(key)
+    }
+
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        self.on_mouse.as_mut()?(mouse, self.state)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {

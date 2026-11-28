@@ -1,8 +1,5 @@
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_core::{buffer::Buffer, layout::Rect};
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 
 use crate::component::{FilterKey, MapMessage};
 
@@ -19,7 +16,7 @@ pub trait Component<Message>: std::fmt::Debug {
     }
 
     #[expect(unused)]
-    fn handle_click(&mut self, pos: Position) -> Option<Message> {
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
         None
     }
 
@@ -82,8 +79,8 @@ where
         self.as_mut().handle_key(key)
     }
 
-    fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.as_mut().handle_click(pos)
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        self.as_mut().handle_mouse(mouse)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {

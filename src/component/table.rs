@@ -1,4 +1,5 @@
 use std::{
+    any,
     cell::Cell,
     ops::{Deref, DerefMut},
     rc::Rc,
@@ -10,7 +11,7 @@ use ratatui_core::{
     style::Style,
     widgets::StatefulWidget,
 };
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 pub use ratatui_widgets::table::Row;
 
 use crate::{
@@ -18,21 +19,42 @@ use crate::{
     scroll::{ScrollAction, ScrollPosition},
 };
 
+type OnMouse<'a, Message> = Box<dyn FnMut(&MouseEvent, &TableState) -> Option<Message> + 'a>;
+
 pub fn table<'a, Message>(state: &'a mut TableState) -> Table<'a, Message> {
     Table {
         state,
         base: Default::default(),
         activity: false,
         on_key: Default::default(),
+        on_mouse: None,
     }
 }
 
-#[derive(Debug)]
 pub struct Table<'a, Message> {
     state: &'a mut TableState,
     base: ratatui_widgets::table::Table<'a>,
     activity: bool,
     on_key: OnKey<'a, Message>,
+    on_mouse: Option<OnMouse<'a, Message>>,
+}
+
+impl<Message> std::fmt::Debug for Table<'_, Message>
+where
+    Message: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Table")
+            .field("state", &self.state)
+            .field("base", &self.base)
+            .field("activity", &self.activity)
+            .field("on_key", &self.on_key)
+            .field(
+                "on_mouse",
+                &format_args!("<closure of `{}`>", any::type_name_of_val(&self.on_mouse)),
+            )
+            .finish()
+    }
 }
 
 impl<'a, Message> Table<'a, Message> {
@@ -68,6 +90,14 @@ impl<'a, Message> Table<'a, Message> {
         self.base = self.base.style(style);
         self
     }
+
+    pub fn on_mouse<F>(mut self, f: F) -> Self
+    where
+        F: FnMut(&MouseEvent, &TableState) -> Option<Message> + 'a,
+    {
+        self.on_mouse = Some(Box::new(f));
+        self
+    }
 }
 
 impl<'a, Message> Component<Message> for Table<'a, Message>
@@ -88,6 +118,10 @@ where
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
         self.on_key.key(key)
+    }
+
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        self.on_mouse.as_mut()?(mouse, self.state)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {

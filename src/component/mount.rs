@@ -1,11 +1,7 @@
 use std::{any, cell::Cell, mem, rc::Rc};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    widgets::Widget,
-};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_core::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 use ratatui_widgets::clear::Clear;
 use thin_cell::unsync::ThinCell;
 
@@ -51,6 +47,7 @@ impl<Message> MountPoint<Message> {
 
         MountView {
             inner,
+            barrier: true,
             area: Default::default(),
         }
     }
@@ -59,7 +56,18 @@ impl<Message> MountPoint<Message> {
 #[derive(Debug, Clone, Default)]
 pub struct MountView<'a, Message> {
     inner: ThinCell<Option<Inner<'a, Message>>>,
+    barrier: bool,
     area: Area,
+}
+
+impl<'a, Message> MountView<'a, Message> {
+    /// Set `true` to disable mouse interaction of layers under the `MountView`.
+    ///
+    /// Default is `true`.
+    pub fn barrier(mut self, barrier: bool) -> Self {
+        self.barrier = barrier;
+        self
+    }
 }
 
 impl<'a, Message> Drop for MountView<'a, Message> {
@@ -77,7 +85,13 @@ where
     }
 
     fn area(&self) -> Rect {
-        self.area.get()
+        // NOTE: An empty mount point occupies no space, so that hit-testing
+        //       containers (e.g. `Layout`) fall through to what lies beneath it.
+        if self.inner.borrow().is_some() {
+            self.area.get()
+        } else {
+            Rect::ZERO
+        }
     }
 
     fn set_area(&mut self, area: Rect) {
@@ -88,8 +102,13 @@ where
         self.inner.borrow().as_mut()?.component.handle_key(key)
     }
 
-    fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner.borrow().as_mut()?.component.handle_click(pos)
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        match self.inner.borrow().as_mut() {
+            Some(v) if v.component.area().contains(mouse.position()) => {
+                v.component.handle_mouse(mouse)
+            }
+            _ => None,
+        }
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
@@ -109,6 +128,10 @@ where
 
             Clear.render(area, buf);
             inner.component.render(area, buf);
+
+            if !self.barrier {
+                self.area.set(area);
+            }
         }
     }
 }
