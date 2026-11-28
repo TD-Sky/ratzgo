@@ -1,11 +1,12 @@
 use std::{
+    any,
     cell::Cell,
     ops::{Deref, DerefMut},
     rc::Rc,
 };
 
 use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, widgets::StatefulWidget};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 pub use ratatui_widgets::list::ListItem;
 
 use crate::{
@@ -13,31 +14,106 @@ use crate::{
     scroll::{ScrollAction, ScrollPosition},
 };
 
+type OnMouse<'a, Message> =
+    Box<dyn FnMut(&MouseEvent, &ListState, ListItemAttrs<'_>) -> Option<Message> + 'a>;
+
 pub fn list<'a, Message>(state: &'a mut ListState) -> List<'a, Message> {
     List {
         state,
         base: Default::default(),
         activity: false,
         on_key: Default::default(),
+        on_mouse: None,
+        attrs: Default::default(),
     }
 }
 
-#[derive(Debug)]
 pub struct List<'a, Message> {
     state: &'a mut ListState,
     base: ratatui_widgets::list::List<'a>,
     activity: bool,
     on_key: OnKey<'a, Message>,
+    on_mouse: Option<OnMouse<'a, Message>>,
+    attrs: Attrs,
+}
+
+impl<'a, Message: std::fmt::Debug> std::fmt::Debug for List<'a, Message> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("List")
+            .field("state", &self.state)
+            .field("base", &self.base)
+            .field("activity", &self.activity)
+            .field("on_key", &self.on_key)
+            .field(
+                "on_mouse",
+                &format_args!("<closure of `{}`>", any::type_name_of_val(&self.on_mouse)),
+            )
+            .field("attrs", &self.attrs)
+            .finish()
+    }
+}
+
+#[derive(Debug, Default)]
+struct Attrs {
+    item_heights: Vec<usize>,
+}
+
+#[derive(Debug)]
+pub struct ListItemAttrs<'a> {
+    attrs: &'a Attrs,
+    cur: ListItemAttr,
+    cur_item: usize,
+}
+
+impl Iterator for ListItemAttrs<'_> {
+    type Item = (usize, ListItemAttr);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.attrs
+            .item_heights
+            .get(self.cur_item)
+            .map(|&v| {
+                (
+                    self.cur_item,
+                    ListItemAttr {
+                        area: Rect {
+                            y: self.cur.area.y + self.cur.area.height,
+                            height: v as u16,
+                            ..self.cur.area
+                        },
+                    },
+                )
+            })
+            .inspect(|v| {
+                self.cur = v.1;
+                self.cur_item += 1;
+            })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct ListItemAttr {
+    pub area: Rect,
 }
 
 impl<'a, Message> List<'a, Message> {
     pub fn items(mut self, items: impl IntoIterator<Item: Into<ListItem<'a>>>) -> Self {
+        let items: Vec<_> = items.into_iter().map(Into::into).collect();
+        self.attrs.item_heights = items.iter().map(|v| v.height()).collect();
         self.base = self.base.items(items);
         self
     }
 
     pub fn style(mut self, style: impl Into<Style>) -> Self {
         self.base = self.base.style(style);
+        self
+    }
+
+    pub fn on_mouse<F>(mut self, f: F) -> Self
+    where
+        F: FnMut(&MouseEvent, &ListState, ListItemAttrs<'_>) -> Option<Message> + 'a,
+    {
+        self.on_mouse = Some(Box::new(f));
         self
     }
 
@@ -68,6 +144,21 @@ where
 
     fn handle_key(&mut self, key: &KeyEvent) -> Option<Message> {
         self.on_key.key(key)
+    }
+
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        let area = self.area();
+        let on_mouse = self.on_mouse.as_mut()?;
+
+        let item_attrs = ListItemAttrs {
+            attrs: &self.attrs,
+            cur: ListItemAttr {
+                area: Rect { height: 0, ..area },
+            },
+            cur_item: self.state.offset(),
+        };
+
+        on_mouse(mouse, self.state, item_attrs)
     }
 
     fn adapt(&mut self, buf: &mut Buffer) {

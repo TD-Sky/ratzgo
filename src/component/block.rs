@@ -1,13 +1,7 @@
 use std::{any, cell::Cell, rc::Rc};
 
-use ratatui_core::{
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::Style,
-    text::Line,
-    widgets::Widget,
-};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_core::{buffer::Buffer, layout::Rect, style::Style, text::Line, widgets::Widget};
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 pub use ratatui_widgets::borders::{BorderType, Borders};
 
 use crate::core::*;
@@ -187,8 +181,18 @@ where
         self.inner.handle_key(key).or_else(|| self.on_key.key(key))
     }
 
-    fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        self.inner.handle_click(pos)
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        let area = self.area.get();
+        let pos = mouse.position();
+
+        match self
+            .components
+            .iter_mut()
+            .find_map(|cpt| decoration_area(cpt, area)?.contains(pos).then_some(cpt))
+        {
+            Some(cpt) => cpt.base.handle_mouse(mouse),
+            None => self.inner.handle_mouse(mouse),
+        }
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {
@@ -202,25 +206,14 @@ where
         self.inner.render(inner_area, buf);
         (&self.base).render(area, buf);
 
-        self.components.retain_mut(|cpt| {
-            let border = match cpt.orientation {
-                BorderOrientation::Top => area.rows().next(),
-                BorderOrientation::Bottom => area.rows().next_back(),
-                BorderOrientation::Left => area.columns().next(),
-                BorderOrientation::Right => area.columns().next_back(),
-            };
-            let Some(border_area) = border else {
-                return false;
-            };
-
-            let Some(pos_area) = (cpt.pos)(border_area) else {
-                return false;
-            };
-
-            cpt.base.render(pos_area, buf);
-
-            true
-        });
+        self.components
+            .retain_mut(|cpt| match decoration_area(cpt, area) {
+                Some(pos_area) => {
+                    cpt.base.render(pos_area, buf);
+                    true
+                }
+                None => false,
+            });
     }
 }
 
@@ -257,4 +250,15 @@ where
             )
             .finish()
     }
+}
+
+fn decoration_area<Message>(cpt: &mut Decoration<'_, Message>, area: Rect) -> Option<Rect> {
+    let border = match cpt.orientation {
+        BorderOrientation::Top => area.rows().next(),
+        BorderOrientation::Bottom => area.rows().next_back(),
+        BorderOrientation::Left => area.columns().next(),
+        BorderOrientation::Right => area.columns().next_back(),
+    }?;
+
+    (cpt.pos)(border)
 }

@@ -842,6 +842,7 @@ dependencies = [
  "ratatui-crossterm",
  "ratatui-widgets",
  "thin-cell",
+ "unicode-width",
 ]
 
 [[package]]

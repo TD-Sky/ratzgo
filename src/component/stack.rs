@@ -1,7 +1,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use ratatui_core::{buffer::Buffer, layout::Rect};
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 
 use crate::core::*;
 
@@ -47,6 +47,14 @@ where
             .find_map(|v| v.activity().then_some(v))
             .and_then(|v| v.handle_key(key))
             .or_else(|| self.on_key.key(key))
+    }
+
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        self.components
+            .iter_mut()
+            .rev()
+            .find_map(|v| v.area().contains(mouse.position()).then_some(v))?
+            .handle_mouse(mouse)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {

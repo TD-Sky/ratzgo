@@ -2,9 +2,9 @@ use std::{cell::Cell, rc::Rc};
 
 use ratatui_core::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Position, Rect},
+    layout::{Constraint, Direction, Rect},
 };
-use ratatui_crossterm::crossterm::event::KeyEvent;
+use ratatui_crossterm::crossterm::event::{KeyEvent, MouseEvent};
 
 use crate::core::*;
 
@@ -88,14 +88,12 @@ where
             .or_else(|| self.on_key.key(key))
     }
 
-    fn handle_click(&mut self, pos: Position) -> Option<Message> {
-        // TODO: click which part
-
-        let cpt = self
-            .components
+    fn handle_mouse(&mut self, mouse: &MouseEvent) -> Option<Message> {
+        let pos = mouse.position();
+        self.components
             .iter_mut()
-            .find_map(|v| v.area().contains(pos).then_some(v))?;
-        cpt.handle_click(pos)
+            .find_map(|v| v.area().contains(pos).then_some(v))?
+            .handle_mouse(mouse)
     }
 
     fn handle_paste(&mut self, content: &str) -> Option<Message> {

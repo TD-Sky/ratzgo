@@ -9,11 +9,13 @@ pub mod core {
     mod active;
     mod area;
     mod component;
+    mod position;
 
     pub use action::{OnKey, OnKeyBuilder};
     pub use active::*;
     pub use area::*;
     pub use component::*;
+    pub use position::*;
 }
 pub mod text {
     pub use ratatui_core::text::{Line, Span, Text};

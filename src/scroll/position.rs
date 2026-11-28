@@ -44,4 +44,8 @@ impl ScrollPosition {
             Self::Ref(v) => v.set(position),
         }
     }
+
+    pub fn shared() -> Self {
+        Self::Ref(Default::default())
+    }
 }
